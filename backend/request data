@@ -1,0 +1,34 @@
+[
+  {
+    "Name": "Sudais Usmani",
+    "Email": "sudaisusmani@gmail.com",
+    "Password": "1234",
+    "Role": "admin",
+    "Phone": "03002759783",
+    "Address": "Karachi, Pakistan password = 1234"
+  },
+  {
+    "Name": "Ali Akbar",
+    "Email": "aliakbar45@gmail.com",
+    "Password": "1234",
+    "Role": "manager",
+    "Phone": "03464657673",
+    "Address": "Karachi, Pakistan password = 1234"
+  },
+  {
+    "Name": "Umair Ahmed",
+    "Email": "umair90@gmail.com",
+    "Password": "1234",
+    "Role": "receptionist",
+    "Phone": "030234525346",
+    "Address": "Karachi, Pakistan password = 1234"
+  },
+  {
+    "Name": "Ahmad Ali",
+    "Email": "ahmad ali@gmail.com",
+    "Password": "1234",
+    "Role": "guest",
+    "Phone": "03001234567",
+    "Address": "Karachi, Pakistan password = 1234"
+    }
+]
