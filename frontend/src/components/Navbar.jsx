@@ -1,43 +1,32 @@
-// src/components/Navigation.jsx
+// src/components/Navigation.jsx (OR Navbar.jsx depending on your naming)
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const Navbar = ({ scrolled }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if we're on the home page
+  const isHomePage = location.pathname === '/';
 
-  const handleNavClick = (e) => {
-    // Only handle smooth scroll for hash links on the same page
-    if (e.target.hash && window.location.pathname === '/') {
-      e.preventDefault();
-      const element = document.querySelector(e.target.hash);
+  const handleNavClick = (e, target) => {
+    e.preventDefault();
+    
+    if (isHomePage && target.startsWith('#')) {
+      // Scroll to section on home page
+      const element = document.querySelector(target);
       if (element) {
         element.scrollIntoView({
           behavior: 'smooth',
           block: 'start'
         });
-        
-        // Close mobile menu if open
-        const navbarCollapse = document.getElementById('navbarNav');
-        if (navbarCollapse && navbarCollapse.classList.contains('show')) {
-          navbarCollapse.classList.remove('show');
-        }
       }
-    }
-  };
-
-  const handleBookNow = () => {
-    if (window.location.pathname === '/') {
-      const bookingSection = document.getElementById('booking');
-      if (bookingSection) {
-        bookingSection.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
-    } else {
-      // If not on home page, navigate to home page with booking section
-      navigate('/#booking');
+    } else if (!isHomePage && target.startsWith('#')) {
+      // Navigate to home page with hash
+      navigate(`/${target}`);
+    } else if (target === '/book-now') {
+      // Navigate to book now page
+      navigate('/book-now');
     }
     
     // Close mobile menu if open
@@ -47,12 +36,21 @@ const Navbar = ({ scrolled }) => {
     }
   };
 
-  const isHomePage = window.location.pathname === '/';
+  const handleBookNow = (e) => {
+    e.preventDefault();
+    navigate('/book-now');
+    
+    // Close mobile menu if open
+    const navbarCollapse = document.getElementById('navbarNav');
+    if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+      navbarCollapse.classList.remove('show');
+    }
+  };
 
   return (
     <nav className={`navbar navbar-expand-lg navbar-dark fixed-top ${scrolled ? 'scrolled' : ''}`}>
       <div className="container">
-        <Link className="navbar-brand" to="/">
+        <Link className="navbar-brand" to="/" onClick={(e) => handleNavClick(e, '/')}>
           <div className="logo-container">
             <div className="logo-circle">
               <span className="logo-text">LS</span>
@@ -60,6 +58,7 @@ const Navbar = ({ scrolled }) => {
             <span className="brand-name">LuxuryStay <span className="brand-subtitle">Hospitality</span></span>
           </div>
         </Link>
+        
         <button 
           className="navbar-toggler" 
           type="button" 
@@ -71,103 +70,88 @@ const Navbar = ({ scrolled }) => {
         >
           <span className="navbar-toggler-icon"></span>
         </button>
+        
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto">
             <li className="nav-item">
               <Link 
-                className="nav-link" 
+                className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} 
                 to="/"
-                onClick={isHomePage ? handleNavClick : undefined}
+                onClick={(e) => handleNavClick(e, '/')}
               >
                 Home
               </Link>
             </li>
+            
             <li className="nav-item">
               <a 
                 className="nav-link" 
-                href={isHomePage ? "#rooms" : "/#rooms"}
-                onClick={handleNavClick}
+                href="#rooms"
+                onClick={(e) => handleNavClick(e, '#rooms')}
               >
                 Rooms & Suites
               </a>
             </li>
+            
             <li className="nav-item">
               <a 
                 className="nav-link" 
-                href={isHomePage ? "#amenities" : "/#amenities"}
-                onClick={handleNavClick}
+                href="#amenities"
+                onClick={(e) => handleNavClick(e, '#amenities')}
               >
                 Amenities
               </a>
             </li>
+            
             <li className="nav-item">
-              <a 
+              <Link 
                 className="nav-link" 
-                href={isHomePage ? "#gallery" : "/#gallery"}
-                onClick={handleNavClick}
+                to="/gallery"
+                onClick={(e) => handleNavClick(e, '/gallery')}
               >
                 Gallery
-              </a>
+              </Link>
             </li>
+            
             <li className="nav-item">
               <a 
                 className="nav-link" 
-                href={isHomePage ? "#contact" : "/#contact"}
-                onClick={handleNavClick}
+                href="#contact"
+                onClick={(e) => handleNavClick(e, '#contact')}
               >
                 Contact
               </a>
             </li>
             
-            {/* Auth Links */}
-            <li className="nav-item dropdown d-lg-none">
-              <a 
-                className="nav-link dropdown-toggle" 
-                href="#" 
-                id="authDropdown" 
-                role="button" 
-                data-bs-toggle="dropdown" 
-                aria-expanded="false"
-              >
-                Account
-              </a>
-              <ul className="dropdown-menu" aria-labelledby="authDropdown">
-                <li>
-                  <Link className="dropdown-item" to="/login">
-                    <i className="fas fa-sign-in-alt me-2"></i> Login
+            {/* Auth Links - Show only if not on auth pages */}
+            {!['/login', '/register'].includes(location.pathname) && (
+              <>
+                <li className="nav-item d-none d-lg-block">
+                  <Link className="nav-link" to="/login">
+                    <i className="fas fa-sign-in-alt me-1"></i> Login
                   </Link>
                 </li>
-                <li>
-                  <Link className="dropdown-item" to="/register">
-                    <i className="fas fa-user-plus me-2"></i> Register
+                
+                <li className="nav-item d-none d-lg-block">
+                  <Link 
+                    className="btn btn-outline-light ms-2" 
+                    to="/register"
+                  >
+                    <i className="fas fa-user-plus me-1"></i> Register
                   </Link>
                 </li>
-              </ul>
-            </li>
-            
-            {/* Desktop Auth Links */}
-            <li className="nav-item d-none d-lg-block">
-              <Link className="nav-link" to="/login">
-                <i className="fas fa-sign-in-alt me-1"></i> Login
-              </Link>
-            </li>
-            <li className="nav-item d-none d-lg-block">
-              <Link 
-                className="btn btn-outline-light booking-btn ms-2" 
-                to="/register"
-              >
-                <i className="fas fa-user-plus me-1"></i> Register
-              </Link>
-            </li>
+              </>
+            )}
             
             {/* Book Now Button */}
             <li className="nav-item">
-              <button 
+              <Link 
                 className="btn btn-primary ms-2 booking-btn-main" 
-                onClick={handleBookNow}
+                to="/book-now"
+                
               >
                 <i className="fas fa-calendar-check me-1"></i> Book Now
-              </button>
+              </Link>
             </li>
           </ul>
         </div>
