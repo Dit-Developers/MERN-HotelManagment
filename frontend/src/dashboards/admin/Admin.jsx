@@ -5,19 +5,53 @@ const Admin = () => {
 
   return (
     <>
-      <h3>Admin Panel</h3>
+      <h3>Admin Dashboard</h3>
 
-      <div className="btn-group mb-3">
-        <button onClick={() => setTab("dashboard")} className="btn btn-primary">Dashboard</button>
-        <button onClick={() => setTab("users")} className="btn btn-primary">Users</button>
-        <button onClick={() => setTab("rooms")} className="btn btn-primary">Rooms</button>
-        <button onClick={() => setTab("reports")} className="btn btn-primary">Reports</button>
+      <div className="btn-group mb-4">
+        <button className="btn btn-outline-primary" onClick={() => setTab("dashboard")}>Dashboard</button>
+        <button className="btn btn-outline-primary" onClick={() => setTab("users")}>Users</button>
+        <button className="btn btn-outline-primary" onClick={() => setTab("rooms")}>Rooms</button>
+        <button className="btn btn-outline-primary" onClick={() => setTab("reports")}>Reports</button>
       </div>
 
-      {tab === "dashboard" && <div>Admin Stats</div>}
-      {tab === "users" && <div>Create / Manage Users</div>}
-      {tab === "rooms" && <div>Room Management</div>}
-      {tab === "reports" && <div>Reports</div>}
+      {tab === "dashboard" && (
+        <div className="row">
+          <div className="col-md-3"><div className="card p-3">Total Rooms</div></div>
+          <div className="col-md-3"><div className="card p-3">Total Users</div></div>
+          <div className="col-md-3"><div className="card p-3">Revenue</div></div>
+        </div>
+      )}
+
+      {tab === "users" && (
+        <div className="card p-3">
+          <h5>Create User</h5>
+          <input className="form-control mb-2" placeholder="Name" />
+          <input className="form-control mb-2" placeholder="Email" />
+          <select className="form-control mb-2">
+            <option>ADMIN</option>
+            <option>MANAGER</option>
+            <option>RECEPTIONIST</option>
+            <option>HOUSEKEEPING</option>
+          </select>
+          <button className="btn btn-primary">Create</button>
+        </div>
+      )}
+
+      {tab === "rooms" && (
+        <div className="card p-3">
+          <h5>Room Management</h5>
+          <input className="form-control mb-2" placeholder="Room Type" />
+          <input className="form-control mb-2" placeholder="Price" />
+          <button className="btn btn-primary">Add Room</button>
+        </div>
+      )}
+
+      {tab === "reports" && (
+        <div className="card p-3">
+          <h5>Reports</h5>
+          <p>Occupancy, Revenue & Room Status</p>
+        </div>
+      )}
     </>
   );
 };
