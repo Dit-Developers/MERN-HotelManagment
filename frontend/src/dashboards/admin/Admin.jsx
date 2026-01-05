@@ -535,7 +535,7 @@ const Admin = () => {
 
   // ========================= RENDER COMPONENTS =========================
   const renderDashboard = () => (
-    <div className="container-fluid">
+    <div className="container-fluid mtdiv">
       {/* Stats Cards */}
       <div className="row mb-4">
         <div className="col-12">
@@ -2291,6 +2291,9 @@ const styles = `
 .avatar-sm {
   width: 40px;
   height: 40px;
+}
+
+.mtdiv{
 }
 
 .border-4 {
