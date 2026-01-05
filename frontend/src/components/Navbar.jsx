@@ -1,156 +1,170 @@
-// src/components/Navigation.jsx (OR Navbar.jsx depending on your naming)
-import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const Navbar = ({ scrolled }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Check if we're on the home page
-  const isHomePage = location.pathname === '/';
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser =
+      JSON.parse(localStorage.getItem("user")) ||
+      JSON.parse(sessionStorage.getItem("user"));
+
+    setUser(storedUser);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    navigate("/login");
+  };
+
+  const getDashboardPath = () => {
+    if (!user) return "/";
+
+    switch (user.Role) {
+      case "admin":
+        return "/admin/dashboard";
+      case "manager":
+        return "/manager/dashboard";
+      case "receptionist":
+        return "/receptionist/dashboard";
+      default:
+        return "/";
+    }
+  };
 
   const handleNavClick = (e, target) => {
     e.preventDefault();
-    
-    if (isHomePage && target.startsWith('#')) {
-      // Scroll to section on home page
-      const element = document.querySelector(target);
-      if (element) {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
-    } else if (!isHomePage && target.startsWith('#')) {
-      // Navigate to home page with hash
-      navigate(`/${target}`);
-    } else if (target === '/book-now') {
-      // Navigate to book now page
-      navigate('/book-now');
-    }
-    
-    // Close mobile menu if open
-    const navbarCollapse = document.getElementById('navbarNav');
-    if (navbarCollapse && navbarCollapse.classList.contains('show')) {
-      navbarCollapse.classList.remove('show');
-    }
-  };
 
-  const handleBookNow = (e) => {
-    e.preventDefault();
-    navigate('/book-now');
-    
-    // Close mobile menu if open
-    const navbarCollapse = document.getElementById('navbarNav');
-    if (navbarCollapse && navbarCollapse.classList.contains('show')) {
-      navbarCollapse.classList.remove('show');
+    const navbarCollapse = document.getElementById("navbarNav");
+    if (navbarCollapse?.classList.contains("show")) {
+      navbarCollapse.classList.remove("show");
     }
+
+    if (location.pathname === "/" && target.startsWith("#")) {
+      const el = document.querySelector(target);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    if (target.startsWith("#")) {
+      navigate("/", { state: { scrollTo: target } });
+      return;
+    }
+
+    navigate(target);
   };
 
   return (
-    <nav className={`navbar navbar-expand-lg navbar-dark fixed-top ${scrolled ? 'scrolled' : ''}`}>
+    <nav
+      className={`navbar navbar-expand-lg navbar-dark fixed-top ${
+        scrolled ? "scrolled" : ""
+      }`}
+    >
       <div className="container">
-        <Link className="navbar-brand" to="/" onClick={(e) => handleNavClick(e, '/')}>
+        {/* Brand */}
+        <Link className="navbar-brand" to="/" onClick={(e) => handleNavClick(e, "/")}>
           <div className="logo-container">
             <div className="logo-circle">
               <span className="logo-text">LS</span>
             </div>
-            <span className="brand-name">LuxuryStay <span className="brand-subtitle">Hospitality</span></span>
+            <span className="brand-name">
+              LuxuryStay <span className="brand-subtitle">Hospitality</span>
+            </span>
           </div>
         </Link>
-        
-        <button 
-          className="navbar-toggler" 
-          type="button" 
-          data-bs-toggle="collapse" 
-          data-bs-target="#navbarNav" 
-          aria-controls="navbarNav" 
-          aria-expanded="false" 
-          aria-label="Toggle navigation"
+
+        <button
+          className="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
         >
           <span className="navbar-toggler-icon"></span>
         </button>
-        
+
         <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto">
+          <ul className="navbar-nav ms-auto align-items-lg-center">
             <li className="nav-item">
-              <Link 
-                className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} 
-                to="/"
-                onClick={(e) => handleNavClick(e, '/')}
-              >
+              <Link className="nav-link" to="/" onClick={(e) => handleNavClick(e, "/")}>
                 Home
               </Link>
             </li>
-            
+
             <li className="nav-item">
-              <a 
-                className="nav-link" 
-                href="#rooms"
-                onClick={(e) => handleNavClick(e, '#rooms')}
-              >
+              <a className="nav-link" href="/" onClick={(e) => handleNavClick(e, "#rooms")}>
                 Rooms & Suites
               </a>
             </li>
-            
+
             <li className="nav-item">
-              <a 
-                className="nav-link" 
-                href="#amenities"
-                onClick={(e) => handleNavClick(e, '#amenities')}
-              >
+              <a className="nav-link" href="/" onClick={(e) => handleNavClick(e, "#amenities")}>
                 Amenities
               </a>
             </li>
-            
+
             <li className="nav-item">
-              <Link 
-                className="nav-link" 
-                to="/gallery"
-                onClick={(e) => handleNavClick(e, '/gallery')}
-              >
+              <Link className="nav-link" to="/gallery">
                 Gallery
               </Link>
             </li>
-            
+
             <li className="nav-item">
-              <a 
-                className="nav-link" 
-                href="#contact"
-                onClick={(e) => handleNavClick(e, '#contact')}
-              >
+              <a className="nav-link" href="/" onClick={(e) => handleNavClick(e, "#contact")}>
                 Contact
               </a>
             </li>
-            
-            {/* Auth Links - Show only if not on auth pages */}
-            {!['/login', '/register'].includes(location.pathname) && (
+
+            {/* AUTH AREA */}
+            {!user ? (
               <>
-                <li className="nav-item d-none d-lg-block">
-                  <Link className="nav-link" to="/login">
-                    <i className="fas fa-sign-in-alt me-1"></i> Login
+                {!["/login", "/register"].includes(location.pathname) && (
+                  <>
+                    <li className="nav-item d-none d-lg-block">
+                      <Link className="nav-link" to="/login">
+                        Login
+                      </Link>
+                    </li>
+
+                    <li className="nav-item d-none d-lg-block">
+                      <Link className="btn btn-outline-light ms-2" to="/register">
+                        Register
+                      </Link>
+                    </li>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                {/* DASHBOARD BUTTON */}
+                <li className="nav-item">
+                  <Link
+                    className="btn btn-outline-warning ms-lg-3"
+                    to={getDashboardPath()}
+                  >
+                    Dashboard
                   </Link>
                 </li>
-                
-                <li className="nav-item d-none d-lg-block">
-                  <Link 
-                    className="btn btn-outline-light ms-2" 
-                    to="/register"
+
+                {/* LOGOUT */}
+                <li className="nav-item ms-lg-2">
+                  <button
+                    className="btn btn-outline-danger"
+                    onClick={handleLogout}
                   >
-                    <i className="fas fa-user-plus me-1"></i> Register
-                  </Link>
+                    Logout
+                  </button>
                 </li>
               </>
             )}
-            
-            {/* Book Now Button */}
-            <li className="nav-item">
-              <Link 
-                className="btn btn-primary ms-2 booking-btn-main" 
-                to="/book-now"
-                
-              >
-                <i className="fas fa-calendar-check me-1"></i> Book Now
+
+            {/* BOOK NOW */}
+            <li className="nav-item ms-lg-3">
+              <Link className="btn btn-primary booking-btn-main" to="/book-now">
+                Book Now
               </Link>
             </li>
           </ul>

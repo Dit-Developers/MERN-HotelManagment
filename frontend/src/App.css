@@ -6,9 +6,9 @@
 /* Import Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
 
-/* Variables */
+/* Variables
 :root {
-  --ls-primary: #c19a6b;  /* Changed from --primary-color to avoid conflicts */
+  --ls-primary: #c19a6b;  
   --ls-primary-dark: #a67c52;
   --ls-secondary: #1a1a1a;
   --ls-light: #f8f5f0;
@@ -17,7 +17,36 @@
   --ls-white: #ffffff;
   --ls-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   --ls-transition: all 0.3s ease;
+} */
+
+
+/* ============================= */
+/* LUXURY COLOR SYSTEM */
+/* ============================= */
+
+:root {
+  /* Signature Gold (Antique Champagne) */
+  --ls-primary: #d4af7a;        /* richer, royal gold */
+  --ls-primary-dark: #b38b5d;   /* deep aged gold */
+
+  /* Core Blacks & Browns */
+  --ls-secondary: #0f0f0f;      /* obsidian black */
+  --ls-text: #1e1e1e;           /* soft black text */
+  --ls-text-light: #8b8b8b;     /* muted luxury gray */
+
+  /* Light Surfaces */
+  --ls-light: #f3efe8;          /* silk ivory */
+  --ls-white: #ffffff;
+
+  /* Shadows (deeper & cinematic) */
+  --ls-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  /* Motion */
+  --ls-transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1);
 }
+
 
 /* Reset & Base Styles */
 * {
@@ -46,56 +75,67 @@ a {
 .highlight {
   color: var(--ls-primary) !important;
 }
-
 /* Navigation Styles */
 .navbar {
-  background-color: rgba(26, 26, 26, 0.9) !important;
+  background-color: rgba(22, 22, 22, 0.88) !important;
   padding: 20px 0 !important;
-  transition: var(--ls-transition) !important;
+  transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1) !important;
   z-index: 1000;
+  border-bottom: 1px solid rgba(193, 154, 107, 0.05);
 }
 
 .navbar.scrolled {
   padding: 12px 0 !important;
-  background-color: rgba(26, 26, 26, 0.98) !important;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background-color: rgba(18, 18, 18, 0.96) !important;
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 6px 28px rgba(0, 0, 0, 0.55),
+    inset 0 -1px 0 rgba(193, 154, 107, 0.08);
 }
 
 /* Logo Styling */
 .logo-container {
   display: flex;
   align-items: center;
-  transition: transform 0.3s ease;
+  transition: transform 0.35s ease;
 }
 
 .logo-container:hover {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .logo-circle {
   width: 50px;
   height: 50px;
-  background: var(--ls-primary);
+  background:
+    radial-gradient(circle at top left,
+      #f3e1b8,
+      var(--ls-primary),
+      #9e6b32
+    );
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 12px;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 .logo-text {
-  color: white;
+  color: #111;
   font-family: 'Playfair Display', serif;
   font-weight: 700;
   font-size: 1.5rem;
+  letter-spacing: 0.5px;
 }
 
 .brand-name {
   font-family: 'Playfair Display', serif;
   font-size: 1.5rem;
   font-weight: 700;
-  color: white;
+  color: #fff;
 }
 
 .brand-subtitle {
@@ -103,38 +143,71 @@ a {
   font-size: 0.9rem;
   font-weight: 300;
   display: block;
-  color: #ddd;
+  color: rgba(255, 255, 255, 0.75);
 }
+/* =======================
+   NAV LINKS – LUXURY VIBE
+======================= */
 
-/* Nav Links */
 .navbar .nav-link {
-  color: white !important;
+  color: rgba(255, 255, 255, 0.88) !important;
   font-weight: 500;
-  margin: 0 8px;
-  transition: var(--ls-transition);
+  margin: 0 10px;
+  padding: 6px 0;
   position: relative;
+  transition: color 0.35s ease;
 }
 
+/* Hover text */
 .navbar .nav-link:hover {
   color: var(--ls-primary) !important;
 }
 
+/* Active text */
 .navbar .nav-link.active {
   color: var(--ls-primary) !important;
 }
 
-.navbar .nav-link.active:after {
+/* Premium underline (default hidden) */
+.navbar .nav-link::after {
   content: '';
   position: absolute;
-  bottom: 5px;
-  left: 15px;
-  right: 15px;
-  height: 2px;
-  background-color: var(--ls-primary);
-  border-radius: 2px;
+  left: 50%;
+  bottom: -6px;
+  width: 0;
+  height: 1.6px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--ls-primary),
+    #f1d7a2,
+    var(--ls-primary),
+    transparent
+  );
+  border-radius: 10px;
+  transform: translateX(-50%);
+  opacity: 0.9;
+  transition:
+    width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.45s ease;
 }
 
-/* Navigation Buttons */
+/* Hover underline */
+.navbar .nav-link:hover::after {
+  width: 70%;
+  box-shadow: 0 0 10px rgba(193, 154, 107, 0.45);
+}
+
+/* Active underline stays */
+.navbar .nav-link.active::after {
+  width: 70%;
+  box-shadow: 0 0 12px rgba(193, 154, 107, 0.55);
+}
+
+/* =======================
+   NAVIGATION BUTTONS
+======================= */
+
 .booking-btn {
   margin-left: 10px;
   border-radius: 30px;
@@ -143,22 +216,39 @@ a {
 }
 
 .booking-btn-main {
-  background-color: var(--ls-primary) !important;
-  border-color: var(--ls-primary) !important;
-  padding: 8px 20px !important;
+  background: linear-gradient(
+    135deg,
+    #f1d7a2,
+    var(--ls-primary),
+    #9e6b32
+  ) !important;
+  border: none !important;
+  padding: 8px 22px !important;
   border-radius: 30px !important;
   font-weight: 500 !important;
-  transition: var(--ls-transition) !important;
+  transition: all 0.45s ease !important;
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .booking-btn-main:hover {
-  background-color: var(--ls-primary-dark) !important;
-  border-color: var(--ls-primary-dark) !important;
+  background: linear-gradient(
+    135deg,
+    #f6e2b9,
+    var(--ls-primary-dark),
+    #8a5a28
+  ) !important;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(193, 154, 107, 0.3) !important;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.65),
+    0 0 12px rgba(193, 154, 107, 0.35) !important;
 }
 
-/* Navbar Toggler Animation */
+/* =======================
+   NAVBAR TOGGLER (LUXURY)
+======================= */
+
 .navbar-toggler {
   border: none !important;
   padding: 0 !important;
@@ -176,26 +266,26 @@ a {
   position: relative;
   height: 2px;
   width: 24px;
-  background-color: white;
-  transition: var(--ls-transition);
+  background-color: rgba(255, 255, 255, 0.9);
+  transition: all 0.4s ease;
 }
 
-.navbar-toggler-icon:before,
-.navbar-toggler-icon:after {
+.navbar-toggler-icon::before,
+.navbar-toggler-icon::after {
   content: '';
   position: absolute;
   left: 0;
   width: 24px;
   height: 2px;
-  background-color: white;
-  transition: var(--ls-transition);
+  background-color: rgba(255, 255, 255, 0.9);
+  transition: all 0.4s ease;
 }
 
-.navbar-toggler-icon:before {
+.navbar-toggler-icon::before {
   top: -8px;
 }
 
-.navbar-toggler-icon:after {
+.navbar-toggler-icon::after {
   bottom: -8px;
 }
 
@@ -203,83 +293,174 @@ a {
   background-color: transparent;
 }
 
-.navbar-toggler[aria-expanded="true"] .navbar-toggler-icon:before {
+.navbar-toggler[aria-expanded="true"] .navbar-toggler-icon::before {
   transform: rotate(45deg);
   top: 0;
 }
 
-.navbar-toggler[aria-expanded="true"] .navbar-toggler-icon:after {
+.navbar-toggler[aria-expanded="true"] .navbar-toggler-icon::after {
   transform: rotate(-45deg);
   bottom: 0;
+}
+@media (max-width: 991px) {
+
+  /* Navbar background for mobile */
+  .navbar-collapse {
+    background: linear-gradient(
+      180deg,
+      rgba(10, 10, 10, 0.98),
+      rgba(20, 20, 20, 0.96)
+    );
+    padding: 18px 22px;
+    border-radius: 18px;
+    margin-top: 14px;
+    box-shadow:
+      0 18px 40px rgba(0, 0, 0, 0.85),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(14px);
+  }
+
+  /* Nav links mobile */
+  .navbar .nav-link {
+    margin: 12px 0;
+    padding: 10px 0;
+    font-size: 16px;
+    letter-spacing: 0.3px;
+  }
+
+  /* Disable center animation */
+  .navbar .nav-link::after {
+    left: 0;
+    bottom: -4px;
+    transform: none;
+    width: 0;
+    height: 2px;
+    border-radius: 8px;
+    background: linear-gradient(
+      90deg,
+      var(--ls-primary),
+      #f1d7a2,
+      var(--ls-primary-dark)
+    );
+    transition: width 0.35s ease;
+  }
+
+  /* Hover / tap underline */
+  .navbar .nav-link:hover::after,
+  .navbar .nav-link.active::after {
+    width: 100%;
+    box-shadow:
+      0 0 10px rgba(193, 154, 107, 0.55),
+      0 0 18px rgba(193, 154, 107, 0.35);
+  }
+
+  /* Booking button full width */
+  .booking-btn {
+    margin-left: 0;
+    margin-top: 16px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .booking-btn-main {
+    width: 100%;
+    padding: 12px 0 !important;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .navbar-collapse {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .navbar .nav-link {
+    font-size: 15px;
+  }
 }
 
 /* Hero Section */
 .hero-section {
-  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
-              url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+  background:
+    linear-gradient(
+      rgba(10, 10, 10, 0.75),
+      rgba(10, 10, 10, 0.85)
+    ),
+    url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   height: 100vh;
-  min-height: 700px;
+  min-height: 750px;
   display: flex;
   align-items: center;
   position: relative;
 }
 
-.hero-overlay {
+/* Subtle dark glass overlay */
+/* .hero-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-}
+  inset: 0;
+  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.35);
+} */
 
+/* Content */
 .hero-content {
   position: relative;
   z-index: 2;
-  color: white;
-  padding-top: 100px;
+  color: #fff;
+  padding-top: 140px;
 }
 
+/* Subtitle */
 .hero-subtitle {
-  font-size: 1.2rem;
-  letter-spacing: 3px;
-  color: var(--ls-primary);
-  margin-bottom: 15px;
+  font-size: 0.9rem;
+  letter-spacing: 4px;
   text-transform: uppercase;
-}
-
-.hero-title {
-  font-size: 4rem;
-  font-weight: 700;
+  color: var(--ls-primary);
   margin-bottom: 20px;
-  line-height: 1.1;
+  font-weight: 500;
 }
 
+/* Title */
+.hero-title {
+  font-size: 4.5rem;
+  font-weight: 600;
+  line-height: 1.05;
+  margin-bottom: 25px;
+  font-family: "Playfair Display", serif; /* luxury font */
+}
+
+/* Highlight word */
+.hero-title .highlight {
+  color: var(--ls-primary);
+  font-weight: 700;
+}
+
+/* Divider line */
+.hero-divider {
+  width: 80px;
+  height: 2px;
+  background: var(--ls-primary);
+  margin: 25px 0 30px;
+  opacity: 0.8;
+}
+
+/* Description */
 .hero-description {
-  font-size: 1.2rem;
-  margin-bottom: 30px;
-  max-width: 600px;
-  color: #eee;
+  font-size: 1.15rem;
+  max-width: 620px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 45px;
+  line-height: 1.8;
 }
 
-.hero-cta {
-  background-color: var(--ls-primary) !important;
-  border: none !important;
-  padding: 15px 35px !important;
-  font-size: 1.1rem !important;
-  font-weight: 500 !important;
-  border-radius: 30px !important;
-  transition: var(--ls-transition) !important;
-}
 
-.hero-cta:hover {
-  background-color: var(--ls-primary-dark) !important;
-  transform: translateY(-3px);
-  color: white !important;
-}
+.hero-cta { background-color: var(--ls-primary) !important; border: none !important; padding: 15px 35px !important; font-size: 1.1rem !important; font-weight: 500 !important; border-radius: 30px !important; transition: var(--ls-transition) !important; } .hero-cta:hover { background-color: var(--ls-primary-dark) !important; transform: translateY(-3px); color: white !important; }
+
 
 /* Booking Widget */
 .booking-widget {
@@ -633,11 +814,12 @@ a {
   border-radius: 50%;
   color: white;
   transition: var(--ls-transition);
+  text-decoration: none;
 }
 
 .social-icons a:hover {
   background-color: var(--ls-primary);
-  transform: translateY(-3px);
+  transform: translateY(-1px);
 }
 
 .footer-bottom {
@@ -1147,7 +1329,7 @@ html {
               url('https://images.unsplash.com/photo-1566665797739-1674de7a421a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
   background-size: cover;
   background-position: center;
-  padding: 100px 0 60px;
+  padding: 100px 100px 60px;
   color: white;
   text-align: center;
 }
@@ -1156,6 +1338,7 @@ html {
   font-size: 3.5rem;
   font-weight: 700;
   margin-bottom: 20px;
+  margin-top: 1px;
 }
 
 .booknow-subtitle {

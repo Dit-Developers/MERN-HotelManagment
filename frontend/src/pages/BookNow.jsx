@@ -220,12 +220,12 @@ const BookNow = () => {
       <Navbar scrolled={scrolled} />
       
       {/* Hero Section */}
-      <section className="booknow-hero">
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-8 mx-auto text-center">
-              <h1 className="booknow-title">Book Your Luxury Stay</h1>
-              <p className="booknow-subtitle">Experience unparalleled comfort and service at LuxuryStay</p>
+      <section className="booknow-hero ">
+        <div className="container ">
+          <div className="row ">
+            <div className="col-lg-8 mx-auto text-center mt-5">
+              <h1 className="booknow-title mt-5">Book Your Luxury Stay</h1>
+              <p className="booknow-subtitle m-5">Experience unparalleled comfort and service at LuxuryStay</p>
             </div>
           </div>
         </div>

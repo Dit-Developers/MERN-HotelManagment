@@ -2,29 +2,36 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
-require("./utils/connection"); 
+require("./utils/connection");
+
+
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.use(express.json());
-app.use(cors());
-
-// User & Auth
-app.use("/users", require("./Routes/UserModel"));
 
 
-app.use("/rooms", require("./Routes/RoomModel"));
-app.use("/bookings", require("./Routes/BookingModel"));
-app.use("/invoices", require("./Routes/InvoiceModel"));
-app.use("/payments", require("./Routes/PaymentModel"));
-app.use("/tasks", require("./Routes/TaskModel"));
-app.use("/services", require("./Routes/ServiceRequestModel"));
-app.use("/system", require("./Routes/SystemModel"));
+// Routes
+app.use("/users", require("./Routes/UserRoutes"));
+app.use("/rooms", require("./Routes/RoomRoutes"));
+app.use("/bookings", require("./Routes/BookingRoutes"));
+app.use("/invoices", require("./Routes/InvoiceRoutes"));
+app.use("/payments", require("./Routes/PaymentRoutes"));
+app.use("/tasks", require("./Routes/TaskRoutes"));
+app.use("/services", require("./Routes/ServiceRequestRoutes"));
+app.use("/system", require("./Routes/SystemRoutes"));
 
-
-// GET SINGLE STUDENT
 app.get("/", (req, res) => {
-    return res.json("Nothing to see here..... hahahahaahhaah");
+  res.json("API is running");
 });
 
-app.listen(process.env.PORT, () => {
-    console.log("API is running on http://localhost:9000/");
-})
+const PORT = process.env.PORT || 3900;
+
+app.listen(PORT, () => {
+  console.log(`API running on http://localhost:${PORT}`);
+});
