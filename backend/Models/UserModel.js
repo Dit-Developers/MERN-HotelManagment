@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
     Password: String,
     Role: {
         type: String,
-        enum: ["admin", "manager", "receptionist", "housekeeping", "guest"]
+        enum: ["admin", "manager", "receptionist", "housekeeping", "guest","user"]
     },
     Status: {
         type: Boolean,

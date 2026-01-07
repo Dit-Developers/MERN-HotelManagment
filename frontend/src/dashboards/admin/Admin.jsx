@@ -9,7 +9,8 @@ import {
   FaExclamationCircle, FaClock, FaPhone, FaEnvelope,
   FaUserTag, FaLock, FaUnlock, FaEye, FaEyeSlash,
   FaCalendarDay, FaMoneyBillWave, FaTasks, FaConciergeBell,
-  FaReceipt, FaCreditCard, FaWrench, FaHotel, FaStar
+  FaReceipt, FaCreditCard, FaWrench, FaHotel, FaStar,
+  FaPlus // Added FaPlus import
 } from 'react-icons/fa';
 
 const API_BASE = "http://localhost:3900";
@@ -2284,7 +2285,8 @@ const Admin = () => {
       </div>
     </div>
   );
-}; 
+};
+
 // Add this CSS in your main CSS file or as a style tag
 const styles = `
 /* Custom styles for Admin dashboard */

@@ -1,6 +1,7 @@
 // src/pages/Register.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -10,12 +11,19 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     phone: '',
-    newsletter: true
+    address: '',
+    newsletter: true,
   });
   
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
+
+  // API base URL - adjust this according to your environment
+  // Use import.meta.env for Vite instead of process.env
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3900';
 
   const validateForm = () => {
     const newErrors = {};
@@ -52,6 +60,17 @@ const Register = () => {
       newErrors.phone = 'Phone number is invalid';
     }
     
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required';
+    }
+    
+    // Check if terms checkbox is checked
+    // We'll handle this differently to avoid DOM access
+    const termsCheckbox = document.getElementById('terms');
+    if (termsCheckbox && !termsCheckbox.checked) {
+      newErrors.terms = 'You must agree to the Terms of Service and Privacy Policy';
+    }
+    
     return newErrors;
   };
 
@@ -69,32 +88,95 @@ const Register = () => {
         [name]: ''
       });
     }
+    
+    // Clear API error when user starts typing
+    if (apiError) {
+      setApiError('');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiError('');
+    setSuccessMessage('');
     
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      
+      // Scroll to first error
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const element = document.getElementById(firstErrorField);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     
     setIsSubmitting(true);
     
-    // Simulate API call
     try {
-      console.log('Registration attempt with:', formData);
+      // Prepare data for API (combine firstName and lastName into Name field)
+      const userData = {
+        Name: `${formData.firstName} ${formData.lastName}`.trim(),
+        Email: formData.email,
+        Password: formData.password,
+        Role: "user", // Fixed role as "user" (not "guest")
+        Phone: formData.phone || '',
+        Address: formData.address,
+        // Optional: You can add newsletter preference to Preferences field
+        Preferences: {
+          newsletter: formData.newsletter
+        }
+      };
       
-      // Simulate successful registration
-      setTimeout(() => {
-        alert('Registration successful! Welcome to LuxuryStay.');
-        navigate('/login'); // Redirect to login page
-      }, 1500);
+      console.log('Sending registration data:', userData);
+      
+      // Make API call to register endpoint
+      const response = await axios.post(`${API_BASE_URL}/users/Register`, userData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.status === 201) {
+        console.log('Registration successful:', response.data);
+        
+        setSuccessMessage('Registration successful! Welcome to LuxuryStay. You will be redirected to login...');
+        
+        // Show success message for 3 seconds then redirect to login
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      }
       
     } catch (error) {
       console.error('Registration error:', error);
-      alert('Registration failed. Please try again.');
+      
+      // Handle different error scenarios
+      if (error.response) {
+        // Server responded with error status
+        if (error.response.status === 400 && error.response.data.message === "User already exists") {
+          setApiError('This email is already registered. Please use a different email or try logging in.');
+        } else {
+          setApiError(error.response.data.message || error.response.data.error || 'Registration failed. Please try again.');
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        setApiError('Network error. Please check your connection and try again.');
+      } else {
+        // Something else happened
+        setApiError('An unexpected error occurred. Please try again.');
+      }
+      
+      // Scroll to error message
+      setTimeout(() => {
+        const errorElement = document.querySelector('.alert-danger');
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      
     } finally {
       setIsSubmitting(false);
     }
@@ -130,6 +212,28 @@ const Register = () => {
                 <p className="auth-subtitle">Join LuxuryStay for exclusive benefits and personalized experiences</p>
               </div>
               
+              {/* API Error Message */}
+              {apiError && (
+                <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                  <i className="fas fa-exclamation-circle me-2"></i>
+                  {apiError}
+                  <button 
+                    type="button" 
+                    className="btn-close" 
+                    onClick={() => setApiError('')}
+                    aria-label="Close"
+                  ></button>
+                </div>
+              )}
+              
+              {/* Success Message */}
+              {successMessage && (
+                <div className="alert alert-success alert-dismissible fade show" role="alert">
+                  <i className="fas fa-check-circle me-2"></i>
+                  {successMessage}
+                </div>
+              )}
+              
               {/* Registration Form */}
               <form onSubmit={handleSubmit} className="auth-form">
                 <div className="row">
@@ -144,6 +248,7 @@ const Register = () => {
                         placeholder="Enter your first name"
                         value={formData.firstName}
                         onChange={handleChange}
+                        disabled={isSubmitting}
                       />
                       {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
                     </div>
@@ -160,6 +265,7 @@ const Register = () => {
                         placeholder="Enter your last name"
                         value={formData.lastName}
                         onChange={handleChange}
+                        disabled={isSubmitting}
                       />
                       {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
                     </div>
@@ -176,6 +282,7 @@ const Register = () => {
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                   />
                   {errors.email && <div className="invalid-feedback">{errors.email}</div>}
                 </div>
@@ -190,8 +297,24 @@ const Register = () => {
                     placeholder="Enter your phone number (optional)"
                     value={formData.phone}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                   />
                   {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
+                </div>
+                
+                <div className="form-group mb-4">
+                  <label htmlFor="address" className="form-label">Address *</label>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    className={`form-control ${errors.address ? 'is-invalid' : ''}`}
+                    placeholder="Enter your address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                  />
+                  {errors.address && <div className="invalid-feedback">{errors.address}</div>}
                 </div>
                 
                 <div className="row">
@@ -206,6 +329,7 @@ const Register = () => {
                         placeholder="Create a password"
                         value={formData.password}
                         onChange={handleChange}
+                        disabled={isSubmitting}
                       />
                       {errors.password && <div className="invalid-feedback">{errors.password}</div>}
                       <small className="form-text text-muted">
@@ -225,6 +349,7 @@ const Register = () => {
                         placeholder="Confirm your password"
                         value={formData.confirmPassword}
                         onChange={handleChange}
+                        disabled={isSubmitting}
                       />
                       {errors.confirmPassword && <div className="invalid-feedback">{errors.confirmPassword}</div>}
                     </div>
@@ -239,6 +364,7 @@ const Register = () => {
                     className="form-check-input"
                     checked={formData.newsletter}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                   />
                   <label htmlFor="newsletter" className="form-check-label">
                     Yes, I want to receive exclusive offers and updates from LuxuryStay
@@ -251,7 +377,8 @@ const Register = () => {
                     id="terms"
                     name="terms"
                     className={`form-check-input ${errors.terms ? 'is-invalid' : ''}`}
-                    required
+                    onChange={handleChange}
+                    disabled={isSubmitting}
                   />
                   <label htmlFor="terms" className="form-check-label">
                     I agree to the{' '}
