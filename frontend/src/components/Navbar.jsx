@@ -1,72 +1,41 @@
+
+// Simplified version - Always show auth buttons when not logged in
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { FaUserCircle, FaSignOutAlt, FaConciergeBell, FaHotel } from "react-icons/fa";
 
 const Navbar = ({ scrolled }) => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const storedUser =
-      JSON.parse(localStorage.getItem("user")) ||
-      JSON.parse(sessionStorage.getItem("user"));
-
-    setUser(storedUser);
+    // Check for user in storage
+    const checkUser = () => {
+      const storedUser = JSON.parse(localStorage.getItem("user")) || 
+                        JSON.parse(sessionStorage.getItem("user")) ||
+                        JSON.parse(localStorage.getItem("guestData"));
+      setUser(storedUser);
+    };
+    
+    checkUser();
+    
+    // Listen for storage changes
+    window.addEventListener('storage', checkUser);
+    return () => window.removeEventListener('storage', checkUser);
   }, []);
 
   const handleLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
-    navigate("/login");
-  };
-
-  const getDashboardPath = () => {
-    if (!user) return "/";
-
-    switch (user.Role) {
-      case "admin":
-        return "/admin/dashboard";
-      case "manager":
-        return "/manager/dashboard";
-      case "receptionist":
-        return "/receptionist/dashboard";
-      default:
-        return "/";
-    }
-  };
-
-  const handleNavClick = (e, target) => {
-    e.preventDefault();
-
-    const navbarCollapse = document.getElementById("navbarNav");
-    if (navbarCollapse?.classList.contains("show")) {
-      navbarCollapse.classList.remove("show");
-    }
-
-    if (location.pathname === "/" && target.startsWith("#")) {
-      const el = document.querySelector(target);
-      if (el) el.scrollIntoView({ behavior: "smooth" });
-      return;
-    }
-
-    if (target.startsWith("#")) {
-      navigate("/", { state: { scrollTo: target } });
-      return;
-    }
-
-    navigate(target);
+    setUser(null);
+    navigate("/");
   };
 
   return (
-    <nav
-      className={`navbar navbar-expand-lg navbar-dark fixed-top ${
-        scrolled ? "scrolled" : ""
-      }`}
-    >
+    <nav className={`navbar navbar-expand-lg navbar-dark fixed-top ${scrolled ? "scrolled" : ""}`}>
       <div className="container">
-        {/* Brand */}
-        <Link className="navbar-brand" to="/" onClick={(e) => handleNavClick(e, "/")}>
+        <Link className="navbar-brand" to="/">
           <div className="logo-container">
             <div className="logo-circle">
               <span className="logo-text">LS</span>
@@ -77,91 +46,90 @@ const Navbar = ({ scrolled }) => {
           </div>
         </Link>
 
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-        >
+        <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span className="navbar-toggler-icon"></span>
         </button>
 
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto align-items-lg-center">
-            <li className="nav-item">
-              <Link className="nav-link" to="/" onClick={(e) => handleNavClick(e, "/")}>
-                Home
-              </Link>
-            </li>
+            {/* Navigation Links */}
+            <li className="nav-item"><Link className="nav-link" to="/">Home</Link></li>
+            <li className="nav-item"><a className="nav-link" href="/#rooms">Rooms</a></li>
+            <li className="nav-item"><a className="nav-link" href="/#amenities">Amenities</a></li>
+            <li className="nav-item"><Link className="nav-link" to="/gallery">Gallery</Link></li>
+            <li className="nav-item"><a className="nav-link" href="/#contact">Contact</a></li>
 
-            <li className="nav-item">
-              <a className="nav-link" href="/" onClick={(e) => handleNavClick(e, "#rooms")}>
-                Rooms & Suites
-              </a>
-            </li>
-
-            <li className="nav-item">
-              <a className="nav-link" href="/" onClick={(e) => handleNavClick(e, "#amenities")}>
-                Amenities
-              </a>
-            </li>
-
-            <li className="nav-item">
-              <Link className="nav-link" to="/gallery">
-                Gallery
-              </Link>
-            </li>
-
-            <li className="nav-item">
-              <a className="nav-link" href="/" onClick={(e) => handleNavClick(e, "#contact")}>
-                Contact
-              </a>
-            </li>
-
-            {/* AUTH AREA */}
-            {!user ? (
+            {/* AUTH SECTION */}
+            {user ? (
+              // USER IS LOGGED IN
               <>
-                {!["/login", "/register"].includes(location.pathname) && (
-                  <>
-                    <li className="nav-item d-none d-lg-block">
-                      <Link className="nav-link" to="/login">
-                        Login
-                      </Link>
-                    </li>
-
-                    <li className="nav-item d-none d-lg-block">
-                      <Link className="btn btn-outline-light ms-2" to="/register">
-                        Register
-                      </Link>
-                    </li>
-                  </>
+                {/* Dashboard Button for Staff */}
+                {user.Role && user.Role !== "guest" && (
+                  <li className="nav-item">
+                    <Link 
+                      className="btn btn-outline-warning ms-lg-2" 
+                      to={
+                        user.Role === "admin" ? "/admin/dashboard" :
+                        user.Role === "manager" ? "/manager/dashboard" :
+                        user.Role === "receptionist" ? "/receptionist/dashboard" : "/"
+                      }
+                    >
+                      Dashboard
+                    </Link>
+                  </li>
                 )}
-              </>
-            ) : (
-              <>
-                {/* DASHBOARD BUTTON */}
-                <li className="nav-item">
-                  <Link
-                    className="btn btn-outline-warning ms-lg-3"
-                    to={getDashboardPath()}
-                  >
-                    Dashboard
-                  </Link>
-                </li>
-
-                {/* LOGOUT */}
+                
+                {/* Profile for Guest */}
+                {user.Role === "guest" && (
+                  <li className="nav-item">
+                    <Link 
+                      className="btn btn-outline-light ms-lg-2 d-flex align-items-center" 
+                      to="/guest/dashboard"
+                    >
+                      <FaUserCircle className="me-2" />
+                      Guest
+                    </Link>
+                  </li>
+                )}
+                
+                {/* Logout Button */}
                 <li className="nav-item ms-lg-2">
-                  <button
-                    className="btn btn-outline-danger"
-                    onClick={handleLogout}
-                  >
+                  <button className="btn btn-outline-danger" onClick={handleLogout}>
+                    <FaSignOutAlt className="me-1" />
                     Logout
                   </button>
                 </li>
               </>
+            ) : (
+              // USER IS NOT LOGGED IN - ALWAYS SHOW THESE
+              <>
+                <li className="nav-item d-none d-lg-block">
+                  <Link className="nav-link" to="/login">
+                    Login
+                  </Link>
+                </li>
+
+                <li className="nav-item d-none d-lg-block">
+                  <Link className="btn btn-outline-light ms-2" to="/register">
+                    Register
+                  </Link>
+                </li>
+                
+                {/* Mobile Auth Links */}
+                <li className="nav-item d-lg-none">
+                  <Link className="dropdown-item" to="/login">
+                    Login
+                  </Link>
+                </li>
+                <li className="nav-item d-lg-none">
+                  <Link className="dropdown-item" to="/register">
+                    Register
+                  </Link>
+                </li>
+              </>
             )}
 
-            {/* BOOK NOW */}
+            {/* BOOK NOW - Always visible */}
             <li className="nav-item ms-lg-3">
               <Link className="btn btn-primary booking-btn-main" to="/book-now">
                 Book Now

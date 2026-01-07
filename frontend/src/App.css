@@ -1743,3 +1743,146 @@ html {
     margin-bottom: 20px;
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Navbar specific styles */
+.navbar {
+  transition: all 0.3s ease;
+  padding: 1rem 0;
+  background: rgba(26, 26, 46, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.navbar.scrolled {
+  background: rgba(26, 26, 46, 0.98);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 0.75rem 0;
+}
+
+/* Logo Styling */
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #D4AF37, #FFD700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.logo-text {
+  color: white;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.brand-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.brand-subtitle {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #D4AF37;
+  display: block;
+}
+
+/* Dropdown Styling */
+.dropdown-menu {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  margin-top: 10px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.dropdown-header {
+  border-radius: 12px 12px 0 0;
+}
+
+.dropdown-item {
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 110, 253, 0.05));
+  padding-left: 25px;
+}
+
+/* Guest Profile Button */
+.btn-outline-light {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  transition: all 0.3s;
+}
+
+.btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Book Now Button */
+.booking-btn-main {
+  background: linear-gradient(135deg, #D4AF37, #B8860B);
+  border: none;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.booking-btn-main:hover {
+  background: linear-gradient(135deg, #B8860B, #D4AF37);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+}
+
+/* Mobile Responsive */
+@media (max-width: 992px) {
+  .navbar-nav {
+    padding: 20px 0;
+  }
+  
+  .nav-item {
+    margin: 5px 0;
+  }
+  
+  .booking-btn-main {
+    margin-top: 10px;
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

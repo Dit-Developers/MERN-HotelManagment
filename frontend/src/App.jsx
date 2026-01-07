@@ -1,3 +1,4 @@
+// App.js - Updated version
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
@@ -12,20 +13,34 @@ import ProtectedRoute from "./dashboards/ProtectedRoute";
 import Admin from "./dashboards/admin/Admin";
 import Manager from "./dashboards/manager/Manager";
 import Receptionist from "./dashboards/receptionist/Receptionist";
+import Guest from "./dashboards/guest/Guest"; // New import
 
 import "./App.css";
+import ManagerDashboard from "./dashboards/manager/Manager";
 
 const App = () => {
   return (
     <Router>
       <Routes>
-        {/* Public */}
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book-now" element={<BookNow />} />
 
-        {/* Dashboards */}
+        {/* Guest Dashboard */}
+        <Route
+          path="/guest/dashboard"
+          element={
+            <ProtectedRoute role="guest">
+              <DashboardLayout>
+                <Guest />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Staff Dashboards */}
         <Route
           path="/admin/dashboard"
           element={
@@ -42,7 +57,7 @@ const App = () => {
           element={
             <ProtectedRoute role="manager">
               <DashboardLayout>
-                <Manager />
+                <ManagerDashboard />
               </DashboardLayout>
             </ProtectedRoute>
           }

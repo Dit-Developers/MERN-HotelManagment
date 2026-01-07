@@ -1,0 +1,327 @@
+/* dashboards/guest/GuestDashboard.css */
+.guest-dashboard-container {
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+  min-height: calc(100vh - 60px);
+}
+
+/* Dashboard Navigation */
+.dashboard-nav {
+  background: white;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.dashboard-nav .nav-link {
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  margin: 0 0.25rem;
+  color: #495057;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.dashboard-nav .nav-link:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+}
+
+.dashboard-nav .nav-link.active {
+  background: linear-gradient(135deg, #0d6efd, #0a58ca);
+  color: white;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+}
+
+/* Welcome Card */
+.welcome-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+.welcome-card .btn-outline-primary,
+.welcome-card .btn-outline-success {
+  border-color: white;
+  color: white;
+}
+
+.welcome-card .btn-outline-primary:hover,
+.welcome-card .btn-outline-success:hover {
+  background: white;
+  color: #764ba2;
+}
+
+/* Stat Cards */
+.stat-card {
+  border-left: 4px solid #0d6efd;
+  border: none;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.stat-card:nth-child(2) {
+  border-left-color: #198754;
+}
+
+.stat-card:nth-child(3) {
+  border-left-color: #ffc107;
+}
+
+.stat-card:nth-child(4) {
+  border-left-color: #0dcaf0;
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  background: rgba(13, 110, 253, 0.1);
+  font-size: 1.5rem;
+}
+
+/* Avatar */
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: 3px solid white;
+}
+
+.profile-avatar {
+  color: #0d6efd;
+  margin-bottom: 20px;
+}
+
+/* Room Display */
+.room-display {
+  position: relative;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.room-number-display {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  display: inline-block;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 1rem;
+}
+
+/* Booking Card */
+.booking-card {
+  border: 1px solid #e9ecef;
+  border-top: 4px solid #0d6efd;
+  transition: all 0.3s ease;
+}
+
+.booking-card:hover {
+  border-color: #0d6efd;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.booking-details {
+  padding: 0.5rem 0;
+}
+
+/* Service Card */
+.service-card {
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.service-card:hover {
+  border-color: #0d6efd;
+  transform: scale(1.05);
+}
+
+.service-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  background: rgba(13, 110, 253, 0.1);
+  font-size: 1.8rem;
+}
+
+/* Quick Actions */
+.quick-actions .btn {
+  text-align: left;
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+
+/* Table Styling */
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Digital Key Display */
+.digital-key-display {
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+}
+
+.key-code {
+  font-family: monospace;
+  letter-spacing: 5px;
+}
+
+/* QR Code Placeholder */
+.qr-code-placeholder {
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+}
+
+/* Loyalty Points */
+.loyalty-points {
+  text-align: center;
+}
+
+.loyalty-points .progress {
+  height: 8px;
+  border-radius: 4px;
+}
+
+/* Badge Customization */
+.badge {
+  font-weight: 500;
+  padding: 0.35em 0.65em;
+  border-radius: 6px;
+}
+
+/* Button Styling */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #0d6efd, #0a58ca);
+  border: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #0a58ca, #084298);
+}
+
+/* Card Styling */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  background: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+/* Form Controls */
+.form-control:focus,
+.form-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Modal Styling */
+.modal-content {
+  border-radius: 12px;
+  border: none;
+}
+
+/* Star Rating */
+.star-rating .star {
+  color: #dee2e6;
+  transition: color 0.2s;
+}
+
+.star-rating .star.filled {
+  color: #ffc107;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-nav .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .welcome-card .row {
+    text-align: center;
+  }
+  
+  .service-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0d6efd;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0a58ca;
+}
+
+/* Alert Styling */
+.alert {
+  border-radius: 8px;
+  border: none;
+}
+
+/* List Group Styling */
+.list-group-item {
+  border: none;
+  padding: 0.75rem 0;
+}
