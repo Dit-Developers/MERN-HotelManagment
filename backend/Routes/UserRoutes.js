@@ -1,138 +1,102 @@
-const express = require("express");
-const router = express.Router();
-const jwt = require("jsonwebtoken");
-
-const User = require("../Models/UserModel");
-
+const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
-
-// POST /users/Register
-
-router.post("/Register", async (req, res) => {
-    try {
-        const { Name, Email, Password, Role, Phone, Address } = req.body;
-
-        // Check if user exists
-        const existingUser = await User.findOne({ Email });
-        if (existingUser) {
-            return res.status(400).json({ message: "User already exists" });
-        }
-
-        // Hash password
-        const saltRounds = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(Password, saltRounds);
-
-        // Create user
-        const user = await User.create({
-            Name,
-            Email,
-            Password: hashedPassword,
-            Role,
-            Phone,
-            Address
-        });
-
-        return res.status(201).json({
-            message: "User registered successfully",
-            user
-        });
-
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
+const userSchema = new mongoose.Schema({
+    Name: {
+        type: String,
+        required: [true, "Name is required"],
+        trim: true
+    },
+    Email: {
+        type: String,
+        required: [true, "Email is required"],
+        unique: true,
+        lowercase: true,
+        trim: true,
+        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email"]
+    },
+    Password: {
+        type: String,
+        required: [true, "Password is required"],
+        minlength: [6, "Password must be at least 6 characters"],
+        select: false
+    },
+    Role: {
+        type: String,
+        enum: ["admin", "manager", "receptionist", "housekeeping", "guest"],
+        default: "guest"
+    },
+    Status: {
+        type: Boolean,
+        default: true
+    },
+    Phone: {
+        type: String,
+        required: [true, "Phone number is required"],
+        match: [/^[0-9]{10,15}$/, "Please provide a valid phone number"]
+    },
+    Address: {
+        type: String,
+        default: ""
+    },
+    HotelId: {
+        type: String,
+        default: "LUX001"
+    },
+    LastLogin: {
+        type: Date
+    },
+    CreatedAt: {
+        type: Date,
+        default: Date.now
+    },
+    UpdatedAt: {
+        type: Date,
+        default: Date.now
+    },
+    Preferences: {
+        type: Object,
+        default: {}
     }
 });
 
-
-// POST /users/Login
-
-router.post("/Login", async (req, res) => {
+// SIMPLIFIED: Only hash password if it's not already hashed
+userSchema.pre("save", async function() {
+    // Skip if password is not modified
+    if (!this.isModified("Password")) return;
+    
+    // Skip if password is already hashed
+    if (this.Password && this.Password.startsWith('$2b$')) return;
+    
     try {
-        const { Email, Password } = req.body;
-
-        const user = await User.findOne({ Email });
-        if (!user) {
-            return res.status(404).json({ message: "Invalid email or password" });
-        }
-
-        const isMatch = await bcrypt.compare(Password, user.Password);
-        if (!isMatch) {
-            return res.status(404).json({ message: "Invalid email or password" });
-        }
-
-        // Generate JWT
-        const token = jwt.sign(
-            {
-                userId: user._id,
-                role: user.Role,
-                email: user.Email
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: "24h" }
-        );
-
-        return res.json({
-            message: "Login successful",
-            user,
-            token
-        });
-
+        const salt = await bcrypt.genSalt(10);
+        this.Password = await bcrypt.hash(this.Password, salt);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        throw error;
     }
 });
 
-// PUT /users/Update/:id
-router.put("/Update/:id", async (req, res) => {
+// Compare password method
+userSchema.methods.comparePassword = async function(candidatePassword) {
     try {
-        const { id } = req.params;
-        const { Name, Email, Password, Role, Phone, Address } = req.body;
-
-        const updateData = { Name, Email, Role, Phone, Address };
-
-        // Hash password if provided
-        if (Password) {
-            const saltRounds = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(Password, saltRounds);
-            updateData.Password = hashedPassword;
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
-        if (!updatedUser) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        res.json({
-            message: "User updated successfully",
-            user: updatedUser
-        });
+        return await bcrypt.compare(candidatePassword, this.Password);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        throw error;
     }
-});
+};
 
-// DELETE /users/Delete/:id
-router.delete("/Delete/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
+// Method to get safe user object (without password)
+userSchema.methods.toSafeObject = function() {
+    const userObject = this.toObject();
+    delete userObject.Password;
+    return userObject;
+};
 
-        const deletedUser = await User.findByIdAndDelete(id);
-        if (!deletedUser) {
-            return res.status(404).json({ message: "User not found" });
-        }
+// Static method to find user by email with password (for login)
+userSchema.statics.findByEmailWithPassword = function(email) {
+    return this.findOne({ Email: email }).select("+Password");
+};
 
-        res.json({
-            message: "User deleted successfully",
-            user: deletedUser
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+const User = mongoose.model("Users", userSchema);
 
-router.get("/", async (req, res) => {
-    const users = await User.find();
-    res.json(users);
-});
-
-module.exports = router;
+module.exports = User;

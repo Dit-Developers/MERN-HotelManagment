@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Navbar from '../Components/Navbar';
+
 import { 
   BuildingOfficeIcon,
   PhotoIcon,
@@ -12,6 +12,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
+import Footer from '../components/Footer';
 
 const GalleryPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -59,7 +60,7 @@ const GalleryPage = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F5FBE6' }}>
       {/* Navigation */}
-      <Navbar />
+      
 
       {/* Hero Section */}
       <div className="relative py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#215E61' }}>
@@ -273,15 +274,7 @@ const GalleryPage = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-800">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <BuildingOfficeIcon className="h-10 w-10 mx-auto text-white" />
-            <p className="mt-4 text-white">© 2024 Hotel Management System. All rights reserved.</p>
-            <p className="mt-2 text-gray-400">Gallery showcasing hotel facilities and HMS features</p>
-          </div>
-        </div>
-      </footer>
+      <Footer/>
 
       {/* Lightbox Modal */}
       {showLightbox && selectedImage && (
