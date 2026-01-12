@@ -14,7 +14,7 @@ const Register = () => {
   });
   const [errors, setErrors] = useState({});
   
-  const { register, loading, error: authError } = useAuth();
+  const { register, loading, error: authError, clearError } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -24,11 +24,17 @@ const Register = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
     
+    // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: ''
       }));
+    }
+    
+    // Clear auth error when user starts typing
+    if (authError) {
+      clearError();
     }
   };
 
@@ -51,6 +57,8 @@ const Register = () => {
     
     if (!formData.phone) {
       newErrors.phone = 'Phone number is required';
+    } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+      newErrors.phone = 'Phone number is invalid';
     }
     
     if (!formData.password) {
@@ -59,7 +67,9 @@ const Register = () => {
       newErrors.password = 'Password must be at least 6 characters';
     }
     
-    if (formData.password !== formData.confirmPassword) {
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
     
@@ -74,7 +84,17 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      // Focus on first error field
+      const firstErrorField = Object.keys(errors)[0];
+      if (firstErrorField) {
+        const element = document.getElementById(firstErrorField);
+        if (element) {
+          element.focus();
+        }
+      }
+      return;
+    }
     
     try {
       await register({
@@ -82,13 +102,14 @@ const Register = () => {
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
-        password: formData.password,
-        address: ''
+        password: formData.password
       });
       
+      // Navigate to home or dashboard after successful registration
       navigate('/');
     } catch (err) {
-      // Error is handled by auth context
+      // Error is already handled in auth context
+      console.log('Registration error caught:', err.message);
     }
   };
 
@@ -104,7 +125,7 @@ const Register = () => {
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="p-3 rounded-full" style={{ backgroundColor: '#215E61', color: 'white' }}>
+            <div className="p-3 rounded-full transition-transform hover:scale-105" style={{ backgroundColor: '#215E61', color: 'white' }}>
               <BuildingIcon />
             </div>
           </div>
@@ -117,18 +138,18 @@ const Register = () => {
         </div>
 
         {/* Registration Form */}
-        <div className="bg-white py-8 px-4 shadow-lg rounded-lg sm:px-10">
+        <div className="bg-white py-8 px-4 shadow-lg rounded-lg sm:px-10 transition-shadow hover:shadow-xl">
           {authError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-600">{authError}</p>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md animate-pulse">
+              <p className="text-sm text-red-600 font-medium">{authError}</p>
             </div>
           )}
           
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit} noValidate>
             {/* Name Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
                   First Name *
                 </label>
                 <div className="mt-1">
@@ -139,17 +160,18 @@ const Register = () => {
                     required
                     value={formData.firstName}
                     onChange={handleChange}
-                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 sm:text-sm ${
-                      errors.firstName ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    style={{ borderColor: errors.firstName ? undefined : '#215E61', focusBorderColor: '#215E61' }}
+                    disabled={loading}
+                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
+                      errors.firstName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    style={{ borderColor: errors.firstName ? undefined : '#215E61' }}
                   />
-                  {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
+                  {errors.firstName && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.firstName}</p>}
                 </div>
               </div>
 
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
                   Last Name *
                 </label>
                 <div className="mt-1">
@@ -160,19 +182,20 @@ const Register = () => {
                     required
                     value={formData.lastName}
                     onChange={handleChange}
-                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 sm:text-sm ${
-                      errors.lastName ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    style={{ borderColor: errors.lastName ? undefined : '#215E61', focusBorderColor: '#215E61' }}
+                    disabled={loading}
+                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
+                      errors.lastName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    style={{ borderColor: errors.lastName ? undefined : '#215E61' }}
                   />
-                  {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
+                  {errors.lastName && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.lastName}</p>}
                 </div>
               </div>
             </div>
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address *
               </label>
               <div className="mt-1">
@@ -184,18 +207,20 @@ const Register = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 sm:text-sm ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  style={{ borderColor: errors.email ? undefined : '#215E61', focusBorderColor: '#215E61' }}
+                  disabled={loading}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
+                    errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  style={{ borderColor: errors.email ? undefined : '#215E61' }}
+                  placeholder="you@example.com"
                 />
-                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                {errors.email && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.email}</p>}
               </div>
             </div>
 
             {/* Phone */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                 Phone Number *
               </label>
               <div className="mt-1">
@@ -207,19 +232,21 @@ const Register = () => {
                   required
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 sm:text-sm ${
-                    errors.phone ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  style={{ borderColor: errors.phone ? undefined : '#215E61', focusBorderColor: '#215E61' }}
+                  disabled={loading}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
+                    errors.phone ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  style={{ borderColor: errors.phone ? undefined : '#215E61' }}
+                  placeholder="+1 234 567 8900"
                 />
-                {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                {errors.phone && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.phone}</p>}
               </div>
             </div>
 
             {/* Password Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password *
                 </label>
                 <div className="mt-1">
@@ -230,12 +257,14 @@ const Register = () => {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 sm:text-sm ${
-                      errors.password ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    style={{ borderColor: errors.password ? undefined : '#215E61', focusBorderColor: '#215E61' }}
+                    disabled={loading}
+                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
+                      errors.password ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    style={{ borderColor: errors.password ? undefined : '#215E61' }}
+                    placeholder="••••••••"
                   />
-                  {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                  {errors.password && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.password}</p>}
                   <p className="mt-1 text-xs text-gray-500">
                     Must be at least 6 characters
                   </p>
@@ -243,7 +272,7 @@ const Register = () => {
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                   Confirm Password *
                 </label>
                 <div className="mt-1">
@@ -254,12 +283,14 @@ const Register = () => {
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 sm:text-sm ${
-                      errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    style={{ borderColor: errors.confirmPassword ? undefined : '#215E61', focusBorderColor: '#215E61' }}
+                    disabled={loading}
+                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
+                      errors.confirmPassword ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    style={{ borderColor: errors.confirmPassword ? undefined : '#215E61' }}
+                    placeholder="••••••••"
                   />
-                  {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.confirmPassword}</p>}
                 </div>
               </div>
             </div>
@@ -274,18 +305,19 @@ const Register = () => {
                   required
                   checked={formData.termsAccepted}
                   onChange={handleChange}
-                  className="h-4 w-4 rounded border-gray-300"
+                  disabled={loading}
+                  className="h-4 w-4 rounded border-gray-300 transition-colors focus:ring-blue-500"
                   style={{ accentColor: '#215E61' }}
                 />
               </div>
               <div className="ml-3">
                 <label htmlFor="termsAccepted" className="text-sm text-gray-900">
                   I agree to the{' '}
-                  <a href="#" className="underline" style={{ color: '#215E61' }}>Terms of Service</a>{' '}
+                  <a href="#" className="underline hover:text-opacity-80 transition-colors" style={{ color: '#215E61' }}>Terms of Service</a>{' '}
                   and{' '}
-                  <a href="#" className="underline" style={{ color: '#215E61' }}>Privacy Policy</a> *
+                  <a href="#" className="underline hover:text-opacity-80 transition-colors" style={{ color: '#215E61' }}>Privacy Policy</a> *
                 </label>
-                {errors.termsAccepted && <p className="mt-1 text-sm text-red-600">{errors.termsAccepted}</p>}
+                {errors.termsAccepted && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.termsAccepted}</p>}
               </div>
             </div>
 
@@ -294,10 +326,18 @@ const Register = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-md text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5"
                 style={{ backgroundColor: '#215E61' }}
               >
-                {loading ? 'Creating Account...' : 'Create Account'}
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating Account...
+                  </>
+                ) : 'Create Account'}
               </button>
             </div>
 
@@ -305,7 +345,12 @@ const Register = () => {
             <div className="text-center">
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}
-                <Link to="/login" className="font-medium hover:text-opacity-80" style={{ color: '#215E61' }}>
+                <Link 
+                  to="/login" 
+                  className="font-medium hover:text-opacity-80 transition-colors" 
+                  style={{ color: '#215E61' }}
+                  onClick={(e) => loading && e.preventDefault()}
+                >
                   Sign in
                 </Link>
               </p>

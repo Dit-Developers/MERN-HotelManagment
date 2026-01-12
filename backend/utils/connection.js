@@ -1,10 +1,6 @@
-const mongoose = require("mongoose");
-
-
-mongoose.connect(process.env.DB_URI)
-.then(() => {
-    console.log("db connected")
-})
-.catch((error) => {
-    console.log("Error in db conn", error);
+const mongoose = require('mongoose');
+const createDefaultAdmin = require('../utils/Admin');
+mongoose.connect(process.env.MONGODB_URI).then(()=> {
+    createDefaultAdmin();
+    console.log("Database connected");
 })

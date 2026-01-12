@@ -1,74 +1,54 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt')
 
-const userSchema = new mongoose.Schema({
-    Name: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    Email: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
-    },
-    Password: {
-        type: String,
-        required: true,
-        minlength: 6
-    },
-    Role: {
-        type: String,
-        enum: ["admin", "manager", "receptionist", "housekeeping", "guest"],
-        default: "guest"
-    },
-    Status: {
-        type: Boolean,
-        default: true
-    },
-    Phone: {
-        type: String,
-        trim: true
-    },
-    Address: {
-        type: String,
-        trim: true
-    },
-    Preferences: {
-        type: Object,
-        default: {}
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
-    }
+var userSchema = new mongoose.Schema({
+  fullName: {
+    type: String,
+    required: true,
+  },
+  username: {
+    type: String,
+    required: true,
+  },
+  phone: {
+    type: String,
+    required: true,
+  },
+
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+    
+    
+  },
+  role: {
+    type: String,
+    enum: ["admin", "user"],
+    default: "user",
+  },
+  status:{
+    type:String,
+    enum:["active", "inactive"],
+    default:"inactive"
+  }
 });
 
-// Update the updatedAt field on save
-userSchema.pre('save', function(next) {
-    this.updatedAt = Date.now();
-    next();
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  var salt = await bcrypt.genSalt(10);
+  var hashPassword = await bcrypt.hash(this.password, salt);
+  this.password = hashPassword;
+  next();
 });
 
-// Update the updatedAt field on update operations
-userSchema.pre('findOneAndUpdate', function(next) {
-    this.set({ updatedAt: Date.now() });
-    next();
-});
-
-// Method to remove password from JSON output
-userSchema.methods.toJSON = function() {
-    const user = this.toObject();
-    delete user.Password;
-    return user;
+userSchema.methods.comparePassword = async function (password) {
+  return bcrypt.compare(password, this.password);
 };
 
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+var userModel = mongoose.model("Users", userSchema);
+module.exports = userModel;

@@ -1,0 +1,70 @@
+1. Authentication & Users
+Auth Routes
+POST /api/auth/register → Register a new user (admin, manager, receptionist, customer)
+
+POST /api/auth/login → Login a user & return JWT token
+
+POST /api/auth/logout → Logout user (invalidate token)
+
+GET /api/auth/me → Get the current logged-in user (protected route)
+
+User Management
+GET /api/users → Get all users (Admin only)
+
+GET /api/users/:id → Get user by ID
+
+PUT /api/users/:id → Update user details (profile, role, etc.)
+
+DELETE /api/users/:id → Delete a user (Admin only)
+
+2. Room Management
+POST /api/rooms → Create a new room (Admin/Manager)
+
+GET /api/rooms → Get all rooms
+
+GET /api/rooms/:id → Get room details by ID
+
+PUT /api/rooms/:id → Update room details (pricing, availability)
+
+DELETE /api/rooms/:id → Delete a room
+
+3. Booking Management
+POST /api/bookings → Create a booking
+
+GET /api/bookings → Get all bookings (Admin/Manager)
+
+GET /api/bookings/:id → Get booking details
+
+PUT /api/bookings/:id → Update booking (change date, room, etc.)
+
+DELETE /api/bookings/:id → Cancel a booking
+
+4. Payment Management
+POST /api/payments → Process a payment (integrate Stripe/PayPal)
+
+GET /api/payments → Get all payments (Admin)
+
+GET /api/payments/:id → Get payment details by ID
+
+5. Reviews & Feedback
+POST /api/reviews → Add a review for a hotel/room
+
+GET /api/reviews → Get all reviews
+
+DELETE /api/reviews/:id → Delete a review (Admin)
+
+6. Hotel Services (Optional)
+GET /api/services → Get available hotel services (spa, dining, etc.)
+
+POST /api/services → Add a new service (Admin)
+
+PUT /api/services/:id → Update service details
+
+DELETE /api/services/:id → Remove a service
+
+7. Dashboard & Reports (Admin Only)
+GET /api/dashboard/summary → Get hotel analytics (total bookings, revenue, occupancy)
+
+GET /api/reports/bookings → Generate booking reports
+
+GET /api/reports/payments → Generate payment reports

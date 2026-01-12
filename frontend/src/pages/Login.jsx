@@ -4,8 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    Email: '',
-    Password: ''
+    email: '',
+    password: ''
   });
   const [errors, setErrors] = useState({});
   const [rememberMe, setRememberMe] = useState(false);
@@ -16,40 +16,31 @@ const Login = () => {
   
   const from = location.state?.from?.pathname || '/';
 
-  // Initialize form with remembered Email on component mount
+  // Initialize form with remembered email on component mount
   useEffect(() => {
-    // Clear any previous auth errors when component mounts
     clearError();
     
-    // Check for remembered Email
     const rememberedEmail = getRememberedEmail();
     if (rememberedEmail) {
       setFormData(prev => ({
         ...prev,
-        Email: rememberedEmail
+        email: rememberedEmail
       }));
       setRememberMe(true);
     }
     
-    // Check for any message from navigation (like session expired)
     if (location.state?.message) {
-      // Could show a toast notification here
       console.log('Navigation message:', location.state.message);
     }
-    
-    // Cleanup function
-    return () => {
-      // Cleanup if needed
-    };
   }, [clearError, getRememberedEmail, location.state]);
 
-  // Auto-focus Email input on mount for better UX
+  // Auto-focus email input on mount
   useEffect(() => {
-    const EmailInput = document.getElementById('Email');
-    if (EmailInput && !formData.Email) {
-      EmailInput.focus();
+    const emailInput = document.getElementById('email');
+    if (emailInput && !formData.email) {
+      emailInput.focus();
     }
-  }, [formData.Email]);
+  }, [formData.email]);
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -59,7 +50,6 @@ const Login = () => {
       [name]: value
     }));
     
-    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -78,17 +68,17 @@ const Login = () => {
     const newErrors = {};
     
     // Email validation
-    if (!formData.Email.trim()) {
-      newErrors.Email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.Email)) {
-      newErrors.Email = 'Email is invalid';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
     }
     
     // Password validation
-    if (!formData.Password) {
-      newErrors.Password = 'Password is required';
-    } else if (formData.Password.length < 2) {
-      newErrors.Password = 'Password must be at least 6 characters';
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
     
     setErrors(newErrors);
@@ -100,7 +90,6 @@ const Login = () => {
     e.preventDefault();
     
     if (!validateForm()) {
-      // Focus on first error field
       const firstErrorField = Object.keys(errors)[0];
       if (firstErrorField) {
         const element = document.getElementById(firstErrorField);
@@ -112,20 +101,18 @@ const Login = () => {
     }
     
     try {
-      await login(formData.Email, formData.Password, rememberMe);
+      await login(formData.email, formData.password, rememberMe);
       navigate(from, { replace: true });
     } catch (err) {
-      // Error is handled by auth context
-      // Focus on Password field on login failure for better UX
-      const PasswordInput = document.getElementById('Password');
-      if (PasswordInput) {
-        PasswordInput.focus();
-        PasswordInput.select();
+      const passwordInput = document.getElementById('password');
+      if (passwordInput) {
+        passwordInput.focus();
+        passwordInput.select();
       }
     }
   };
 
-  // Handle Enter key press for better UX
+  // Handle Enter key press
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key === 'Enter' && !loading) {
@@ -146,13 +133,11 @@ const Login = () => {
   // Show loading state effect
   useEffect(() => {
     if (loading) {
-      // Disable form inputs during loading
       const inputs = document.querySelectorAll('input, button');
       inputs.forEach(input => {
         input.setAttribute('disabled', 'true');
       });
     } else {
-      // Re-enable form inputs
       const inputs = document.querySelectorAll('input, button');
       inputs.forEach(input => {
         input.removeAttribute('disabled');
@@ -160,34 +145,18 @@ const Login = () => {
     }
   }, [loading]);
 
-  // Handle demo credential click
-  const handleDemoCredentialClick = (Email, Password) => {
-    setFormData({
-      Email,
-      Password
-    });
-    
-    // Auto-submit after a short delay for demo convenience
-    setTimeout(() => {
-      const submitButton = document.querySelector('button[type="submit"]');
-      if (submitButton && !loading) {
-        submitButton.click();
-      }
-    }, 100);
-  };
-
   // Reset form
   const handleResetForm = () => {
     setFormData({
-      Email: '',
-      Password: ''
+      email: '',
+      password: ''
     });
     setErrors({});
     setRememberMe(false);
     
-    const EmailInput = document.getElementById('Email');
-    if (EmailInput) {
-      EmailInput.focus();
+    const emailInput = document.getElementById('email');
+    if (emailInput) {
+      emailInput.focus();
     }
   };
 
@@ -241,30 +210,30 @@ const Login = () => {
           <form className="space-y-6" onSubmit={handleSubmit} noValidate>
             {/* Email Field */}
             <div>
-              <label htmlFor="Email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address
               </label>
               <div className="mt-1 relative">
                 <input
-                  id="Email"
-                  name="Email"
-                  type="Email"
-                  autoComplete="Email"
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
                   required
-                  value={formData.Email}
+                  value={formData.email}
                   onChange={handleChange}
                   disabled={loading}
                   className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
-                    errors.Email 
+                    errors.email
                       ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
                       : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                   } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   style={{ 
-                    borderColor: errors.Email ? undefined : '#215E61',
+                    borderColor: errors.email ? undefined : '#215E61',
                   }}
                   placeholder="you@example.com"
                 />
-                {errors.Email && (
+                {errors.email && (
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -272,35 +241,35 @@ const Login = () => {
                   </div>
                 )}
               </div>
-              {errors.Email && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.Email}</p>}
+              {errors.email && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.email}</p>}
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="Password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <div className="mt-1 relative">
                 <input
-                  id="Password"
-                  name="Password"
-                  type="Password"
-                  autoComplete="current-Password"
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
                   required
-                  value={formData.Password}
+                  value={formData.password}
                   onChange={handleChange}
                   disabled={loading}
                   className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
-                    errors.Password 
+                    errors.password
                       ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
                       : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                   } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   style={{ 
-                    borderColor: errors.Password ? undefined : '#215E61',
+                    borderColor: errors.password ? undefined : '#215E61',
                   }}
                   placeholder="••••••••"
                 />
-                {errors.Password && (
+                {errors.password && (
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -308,7 +277,7 @@ const Login = () => {
                   </div>
                 )}
               </div>
-              {errors.Password && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.Password}</p>}
+              {errors.password && <p className="mt-1 text-sm text-red-600 animate-fadeIn">{errors.password}</p>}
             </div>
 
             {/* Remember Me & Forgot Password */}
@@ -332,7 +301,7 @@ const Login = () => {
               <div className="text-sm">
                 <button
                   type="button"
-                  onClick={() => navigate('/forgot-Password')}
+                  onClick={() => navigate('/forgot-password')}
                   disabled={loading}
                   className="font-medium hover:text-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ color: '#215E61' }}
@@ -377,37 +346,6 @@ const Login = () => {
               </p>
             </div>
           </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Demo Credentials:</h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between items-center bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors cursor-pointer group"
-                   onClick={() => handleDemoCredentialClick('guest@example.com', 'Password123')}>
-                <span className="font-medium">Guest:</span>
-                <span className="font-mono text-gray-500 group-hover:text-gray-700 transition-colors">
-                  guest@example.com / Password123
-                </span>
-                <span className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">Click to use</span>
-              </div>
-              <div className="flex justify-between items-center bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors cursor-pointer group"
-                   onClick={() => handleDemoCredentialClick('admin@hotel.com', 'admin123')}>
-                <span className="font-medium">Admin:</span>
-                <span className="font-mono text-gray-500 group-hover:text-gray-700 transition-colors">
-                  admin@hotel.com / admin123
-                </span>
-                <span className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">Click to use</span>
-              </div>
-              <div className="flex justify-between items-center bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors cursor-pointer group"
-                   onClick={() => handleDemoCredentialClick('reception@hotel.com', 'reception123')}>
-                <span className="font-medium">Receptionist:</span>
-                <span className="font-mono text-gray-500 group-hover:text-gray-700 transition-colors">
-                  reception@hotel.com / reception123
-                </span>
-                <span className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">Click to use</span>
-              </div>
-            </div>
-          </div>
 
           {/* Reset Form Button */}
           <div className="mt-6 text-center">

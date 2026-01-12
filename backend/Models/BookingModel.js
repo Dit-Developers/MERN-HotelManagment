@@ -1,24 +1,32 @@
-const mongoose = require("mongoose");
+// REFERENTIAL INTEGRITY
+// NEW CONCEPT HERE OF REFERENCES / NORMALIZATION
+const mongoose = require('mongoose');
 
-const bookingSchema = new mongoose.Schema({
-    GuestId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Users"
+var bookingSchema = new mongoose.Schema({
+    guestId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Users'
     },
-    RoomId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Rooms"
+    roomId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Room'
     },
-    CheckInDate: Date,
-    CheckOutDate: Date,
-    ActualCheckIn: Date,
-    ActualCheckOut: Date,
-    Status: {
-        type: String,
-        default: "reserved"
+    bookingDate:{
+        type: Date,
+    },
+    checkinDate:{
+        type:Date
+    },
+    checkoutDate:{
+        type:Date
+    },
+    bookingStatus:{
+        type:String,
+        enum:['cancelled', 'pending', 'confirmed', 'checked-in', 'checked-out']
     }
+
 });
 
-const bookingModel = new mongoose.model("Bookings", bookingSchema);
+const BookingModel = mongoose.model("Booking", bookingSchema);
 
-module.exports = bookingModel;
+module.exports = BookingModel;
