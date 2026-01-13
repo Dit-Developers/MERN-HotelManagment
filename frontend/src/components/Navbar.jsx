@@ -1,31 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, ROLES } from '../contexts/AuthContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { user, logout, hasRole } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const userMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
-  // Guest navigation items
-  const guestNavItems = [
+  // Public navigation items (always visible)
+  const publicNavItems = [
     { name: 'Home', path: '/' },
     { name: 'Rooms & Suites', path: '/rooms' },
     { name: 'Gallery', path: '/gallery' },
-    { name: 'Book Now', path: '/booknow' },
+    { name: 'Book Now', path: '/booknow', requiresAuth: true },
     { name: 'Contact', path: '/contact' },
   ];
 
-  // Staff navigation items
+  // Staff/Admin navigation items (only for logged-in staff)
   const staffNavItems = [
-    { name: 'Dashboard', path: '/admin/dashboard', roles: [ROLES.ADMIN, ROLES.MANAGER] },
-    { name: 'Bookings', path: '/admin/bookings', roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST] },
-    { name: 'Rooms', path: '/admin/rooms', roles: [ROLES.ADMIN, ROLES.MANAGER] },
-    { name: 'Tasks', path: '/housekeeping/tasks', roles: [ROLES.HOUSEKEEPING] },
-    { name: 'Reports', path: '/admin/reports', roles: [ROLES.ADMIN, ROLES.MANAGER] },
+    { name: 'Dashboard', path: '/admin/dashboard', roles: [ROLES.ADMIN, ROLES.MANAGER], requiresAuth: true },
+    { name: 'Bookings', path: '/admin/bookings', roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST], requiresAuth: true },
+    { name: 'Rooms', path: '/admin/rooms', roles: [ROLES.ADMIN, ROLES.MANAGER], requiresAuth: true },
+    { name: 'Tasks', path: '/housekeeping/tasks', roles: [ROLES.HOUSEKEEPING], requiresAuth: true },
+    { name: 'Reports', path: '/admin/reports', roles: [ROLES.ADMIN, ROLES.MANAGER], requiresAuth: true },
+  ];
+
+  // Guest-specific items (only for logged-in guests)
+  const guestNavItems = [
+    { name: 'My Bookings', path: '/my-bookings', requiresAuth: true },
+    { name: 'My Profile', path: '/profile', requiresAuth: true },
   ];
 
   // Close menus when clicking outside
@@ -45,21 +52,52 @@ const Navbar = () => {
     };
   }, []);
 
+  // Handle navigation to auth-required pages
+  const handleNavigation = (item) => {
+    if (item.requiresAuth && !isAuthenticated) {
+      // Redirect to login with return URL
+      navigate('/login', { 
+        state: { 
+          from: item.path,
+          message: `Please login to access ${item.name}` 
+        } 
+      });
+      return false;
+    }
+    return true;
+  };
+
   // Check if user has access to navigation item
   const hasAccess = (item) => {
-    if (!item.roles) return true;
-    if (!user) return false;
-    return item.roles.includes(user.Role);
+    // Public items are always accessible
+    if (!item.requiresAuth) return true;
+    
+    // Auth-required items need user to be logged in
+    if (!isAuthenticated || !user) return false;
+    
+    // If item has role restrictions, check them
+    if (item.roles) {
+      return item.roles.includes(user.role);
+    }
+    
+    return true;
   };
 
   // Determine which nav items to show based on user role
   const getNavItems = () => {
-    if (!user) return guestNavItems;
+    const items = [...publicNavItems];
     
-    if (user.Role === ROLES.GUEST) return guestNavItems;
+    if (isAuthenticated && user) {
+      if (user.role === ROLES.GUEST) {
+        // Add guest-specific items
+        items.push(...guestNavItems.filter(hasAccess));
+      } else {
+        // Add staff/admin items based on role
+        items.push(...staffNavItems.filter(hasAccess));
+      }
+    }
     
-    // Filter staff nav items based on user role
-    return staffNavItems.filter(hasAccess);
+    return items;
   };
 
   const navItems = getNavItems();
@@ -68,7 +106,7 @@ const Navbar = () => {
     logout();
     setIsUserMenuOpen(false);
     setIsMenuOpen(false);
-    navigate('/login');
+    navigate('/');
   };
 
   const BuildingIcon = () => (
@@ -95,6 +133,24 @@ const Navbar = () => {
     </svg>
   );
 
+  // Get user's display name safely
+  const getUserDisplayName = () => {
+    if (!user) return 'User';
+    return user.fullName || user.name || user.email || 'User';
+  };
+
+  // Get user's email safely
+  const getUserEmail = () => {
+    if (!user) return '';
+    return user.email || '';
+  };
+
+  // Get user's role safely
+  const getUserRole = () => {
+    if (!user) return 'guest';
+    return user.role || 'guest';
+  };
+
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -111,9 +167,9 @@ const Navbar = () => {
                 </span>
                 <div className="flex items-center">
                   <span className="text-xs text-gray-500 font-medium">HOSPITALITY</span>
-                  {user && user.Role !== ROLES.GUEST && (
+                  {user && getUserRole() !== ROLES.GUEST && (
                     <span className="ml-2 text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                      {user.Role.toUpperCase()}
+                      {getUserRole().toUpperCase()}
                     </span>
                   )}
                 </div>
@@ -127,10 +183,25 @@ const Navbar = () => {
               <Link
                 key={item.name}
                 to={item.path}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors duration-200"
-                onClick={() => setIsMenuOpen(false)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                  item.requiresAuth && !isAuthenticated 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+                onClick={(e) => {
+                  if (item.requiresAuth && !isAuthenticated) {
+                    e.preventDefault();
+                    handleNavigation(item);
+                  } else {
+                    setIsMenuOpen(false);
+                  }
+                }}
+                title={item.requiresAuth && !isAuthenticated ? "Login required" : ""}
               >
                 {item.name}
+                {item.requiresAuth && !isAuthenticated && (
+                  <span className="ml-1 text-xs">🔒</span>
+                )}
               </Link>
             ))}
           </div>
@@ -139,7 +210,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {/* User Actions */}
             <div className="hidden md:flex items-center space-x-3">
-              {user ? (
+              {isAuthenticated ? (
                 <>
                   {/* User Menu */}
                   <div className="relative" ref={userMenuRef}>
@@ -152,15 +223,15 @@ const Navbar = () => {
                       <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
                         <UserIcon className="text-gray-600" />
                       </div>
-                      <span>{user.Name || 'User'}</span>
+                      <span>{getUserDisplayName()}</span>
                     </button>
                     
                     {isUserMenuOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                         <div className="px-4 py-2 border-b">
-                          <p className="text-sm font-medium text-gray-900">{user.Name || 'User'}</p>
-                          <p className="text-xs text-gray-500">{user.Email || ''}</p>
-                          <p className="text-xs text-gray-500 mt-1">Role: {user.Role || 'guest'}</p>
+                          <p className="text-sm font-medium text-gray-900">{getUserDisplayName()}</p>
+                          <p className="text-xs text-gray-500">{getUserEmail()}</p>
+                          <p className="text-xs text-gray-500 mt-1">Role: {getUserRole()}</p>
                         </div>
                         <Link
                           to="/profile"
@@ -169,7 +240,7 @@ const Navbar = () => {
                         >
                           My Profile
                         </Link>
-                        {user.Role === ROLES.GUEST && (
+                        {getUserRole() === ROLES.GUEST && (
                           <Link
                             to="/my-bookings"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -198,7 +269,7 @@ const Navbar = () => {
                   </Link>
                   <Link 
                     to="/register"
-                    className="px-4 py-2 text-sm font-medium text-white rounded-md transition-colors duration-200"
+                    className="px-4 py-2 text-sm font-medium text-white rounded-md transition-colors duration-200 hover:opacity-90"
                     style={{ backgroundColor: '#215E61' }}
                   >
                     Register
@@ -230,17 +301,38 @@ const Navbar = () => {
             <Link
               key={item.name}
               to={item.path}
-              className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
+              className={`block px-3 py-2 text-base font-medium rounded-md ${
+                item.requiresAuth && !isAuthenticated 
+                  ? 'text-gray-400 cursor-not-allowed' 
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+              onClick={(e) => {
+                if (item.requiresAuth && !isAuthenticated) {
+                  e.preventDefault();
+                  handleNavigation(item);
+                  setIsMenuOpen(false);
+                } else {
+                  setIsMenuOpen(false);
+                }
+              }}
+              title={item.requiresAuth && !isAuthenticated ? "Login required" : ""}
             >
-              {item.name}
+              <div className="flex items-center">
+                {item.name}
+                {item.requiresAuth && !isAuthenticated && (
+                  <span className="ml-2 text-xs">🔒</span>
+                )}
+              </div>
             </Link>
           ))}
           
           {/* Mobile Authentication */}
-          {!user ? (
+          {!isAuthenticated ? (
             <div className="pt-4 pb-3 border-t border-gray-200">
               <div className="space-y-2 px-3">
+                <div className="text-sm text-gray-500 mb-2">
+                  Login to access booking and other features
+                </div>
                 <Link
                   to="/login"
                   className="block w-full text-center px-4 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md border border-gray-300"
@@ -250,7 +342,7 @@ const Navbar = () => {
                 </Link>
                 <Link
                   to="/register"
-                  className="block w-full text-center px-4 py-2 text-base font-medium text-white rounded-md"
+                  className="block w-full text-center px-4 py-2 text-base font-medium text-white rounded-md hover:opacity-90"
                   style={{ backgroundColor: '#215E61' }}
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -266,9 +358,9 @@ const Navbar = () => {
                     <UserIcon className="text-gray-600" />
                   </div>
                   <div className="ml-3">
-                    <p className="text-base font-medium text-gray-800">{user.Name || 'User'}</p>
-                    <p className="text-sm text-gray-500">{user.Email || ''}</p>
-                    <p className="text-xs text-gray-500">Role: {user.Role || 'guest'}</p>
+                    <p className="text-base font-medium text-gray-800">{getUserDisplayName()}</p>
+                    <p className="text-sm text-gray-500">{getUserEmail()}</p>
+                    <p className="text-xs text-gray-500">Role: {getUserRole()}</p>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
@@ -279,7 +371,7 @@ const Navbar = () => {
                   >
                     My Profile
                   </Link>
-                  {user.Role === ROLES.GUEST && (
+                  {getUserRole() === ROLES.GUEST && (
                     <Link
                       to="/my-bookings"
                       className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"

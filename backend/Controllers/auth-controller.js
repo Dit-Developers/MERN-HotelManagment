@@ -1,7 +1,7 @@
 const userModel = require("../Models/UserModel");
 const jwt = require("jsonwebtoken");
-const activeUserStatus = "true";
-const inactiveUserStatus = "false";
+const activeUserStatus = "active";
+const inactiveUserStatus = "inactive";
 
 
 //  AUTHENTICATION API 
@@ -22,7 +22,7 @@ const register = async (req, res) => {
       email: email,
       password: password,
       role: role,
-      status: inactiveUserStatus
+      status: "active"
     });
 
     const token = jwt.sign(
@@ -107,34 +107,74 @@ const login = async (req, res) => {
 // PROFILE API
 const profileData = async (req, res) => {
   try {
-    const findUser = await userModel.findOne({ _id: req.user._id, status: activeUserStatus });
+    console.log("🔍 Profile API called");
+    console.log("📝 Headers:", req.headers);
+    console.log("👤 req.user:", req.user);
+    console.log("👤 req.user._id:", req.user?._id);
 
-    if (!findUser) {
-      return res.status(404).json({ message: "Unable to find User" });
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      console.log("❌ No user ID found in request");
+      return res.status(401).json({ 
+        message: "Unauthorized. Please login first.",
+        error: "User not authenticated"
+      });
     }
 
-    // Remove password from response
-    var userData = {
-      _id: findUser._id,  // Add _id
+    // Find user by ID
+    const findUser = await userModel.findById(req.user._id);
+    console.log("🔎 Found user in DB:", findUser ? "Yes" : "No");
+    
+    if (!findUser) {
+      console.log("❌ User not found in database");
+      return res.status(404).json({ 
+        message: "User not found",
+        error: "User does not exist in database"
+      });
+    }
+
+    // Check if user is active
+    console.log("📊 User status:", findUser.status);
+    if (findUser.status !== "active") {
+      console.log("⚠️ User is not active");
+      return res.status(403).json({ 
+        message: `Your account is ${findUser.status}. Please contact administrator.`,
+        error: `Account is ${findUser.status}`
+      });
+    }
+
+    // Prepare user data (remove sensitive information)
+    const userData = {
+      _id: findUser._id,
       fullName: findUser.fullName,
       email: findUser.email,
       username: findUser.username,
       phone: findUser.phone,
       role: findUser.role,
       status: findUser.status
-      // Removed password for security
     };
 
-    return res.json({ 
-      message: "Here is your user data", 
-      user: userData  // Change from userData to user for consistency
+    console.log("✅ Sending user data:", userData.email);
+    
+    return res.status(200).json({ 
+      success: true,
+      message: "Profile data retrieved successfully", 
+      user: userData  // Changed to 'user' for consistency
     });
+    
   } catch (error) {
-    console.log("An error occurred in profile API", error.message);
-    return res.status(500).json({ message: "An error occurred", error });
+    console.log("❌ An error occurred in profile API:", error.message);
+    console.log("📋 Error stack:", error.stack);
+    console.log("🔧 Error details:", error);
+    
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal server error", 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
-
 
 // USER MANAGEMENT API
 // Update USER API 
@@ -228,4 +268,46 @@ const deleteUser = async (req, res) => {
     return res.status(400).json({message:"Server error", error});
   }
 }
-module.exports = { register, login, profileData, update, getAllUsers, getSingleUser, updateUserStatus , deleteUser};
+
+
+// const logout = useCallback(async () => {
+//   if (isLoggingOutRef.current) {
+//     return;
+//   }
+  
+//   isLoggingOutRef.current = true;
+  
+//   try {
+//     // Clear local state
+//     setUser(null);
+//     setIsAuthenticated(false);
+//     setError('');
+    
+//     // Clear localStorage
+//     localStorage.removeItem('token');
+//     localStorage.removeItem('user');
+//     localStorage.removeItem('rememberEmail');
+    
+//     // Remove axios auth header
+//     delete axios.defaults.headers.common['Authorization'];
+    
+//     // Optional: Call logout API if it exists
+//     try {
+//       await axios.post('/api/auth/logout', {}, {
+//         timeout: 3000,
+//         headers: { 'X-Skip-Interceptor': 'true' }
+//       });
+//     } catch (apiError) {
+//       // If API doesn't exist, just log and continue
+//       console.log('Logout API not available, proceeding with client-side logout');
+//     }
+//   } catch (error) {
+//     console.error('Logout error:', error);
+//   } finally {
+//     navigate('/login', { replace: true });
+//     setTimeout(() => {
+//       isLoggingOutRef.current = false;
+//     }, 100);
+//   }
+// }, [navigate]);
+module.exports = { register, login,  profileData, update, getAllUsers, getSingleUser, updateUserStatus , deleteUser};

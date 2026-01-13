@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    // FIXED: Logout function
+    // Logout function
     const logout = useCallback(async () => {
         if (isLoggingOutRef.current) {
             return;
@@ -83,16 +83,6 @@ export const AuthProvider = ({ children }) => {
             // Remove axios auth header
             delete axios.defaults.headers.common['Authorization'];
             
-            // Try to call logout API if available
-            try {
-                await axios.post('/users/logout', {}, {
-                    timeout: 3000,
-                    headers: { 'X-Skip-Interceptor': 'true' }
-                });
-            } catch (apiError) {
-                // Ignore API errors for logout
-                console.log('Logout API call skipped:', apiError.message);
-            }
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
@@ -113,11 +103,11 @@ export const AuthProvider = ({ children }) => {
                 setAuthToken(token);
                 
                 try {
-                    // Try to verify token with server
-                    const response = await axios.get('/users/me');
+                    // Verify token with server by getting profile
+                    const response = await axios.get('/api/auth/profile');
                     console.log('User verified successfully');
                     
-                    const serverUser = response.data.user || response.data;
+                    const serverUser = response.data.userData || response.data;
                     const enhancedUser = {
                         ...serverUser,
                         userId: serverUser._id || serverUser.userId
@@ -127,7 +117,7 @@ export const AuthProvider = ({ children }) => {
                     setIsAuthenticated(true);
                     localStorage.setItem('user', JSON.stringify(enhancedUser));
                 } catch (error) {
-                    console.error('Token verification failed:', error);
+                    console.error('Token verification failed:', error.response?.data?.message || error.message);
                     logout();
                 }
             } else {
@@ -139,7 +129,7 @@ export const AuthProvider = ({ children }) => {
         initializeAuth();
     }, [setAuthToken, logout]);
 
-    // FIXED: Interceptor for handling auth errors
+    // Interceptor for handling auth errors
     useEffect(() => {
         const interceptor = axios.interceptors.response.use(
             (response) => response,
@@ -149,9 +139,13 @@ export const AuthProvider = ({ children }) => {
                     return Promise.reject(error);
                 }
                 
-                if (error.response?.status === 401) {
+                // Don't auto-logout for login/register endpoints
+                const isAuthRequest = error.config?.url?.includes('/login') || 
+                                     error.config?.url?.includes('/register');
+                
+                if (error.response?.status === 401 && !isAuthRequest) {
                     if (!isLoggingOutRef.current) {
-                        console.log('401 Unauthorized - Logging out');
+                        console.log('401 Unauthorized - Token expired or invalid');
                         logout();
                     }
                 } else if (!error.response) {
@@ -167,7 +161,7 @@ export const AuthProvider = ({ children }) => {
         };
     }, [logout]);
 
-    // FIXED: Enhanced Login function - UPDATED FIELD NAMES
+    // Login function - UPDATED to match your backend response
     const login = async (email, password, rememberMe = false) => {
         setError('');
         setLoading(true);
@@ -175,38 +169,61 @@ export const AuthProvider = ({ children }) => {
         console.log('Login attempt:', { email });
         
         try {
-           const response = await axios.post('/api/auth/login', {
+            const response = await axios.post('/api/auth/login', {
                 email: email,
                 password: password
             });
             
             console.log('Login response:', response.data);
             
-            const { token, user: userData } = response.data;
+            const { token, message } = response.data;
             
-            if (!token || !userData) {
-                throw new Error('Invalid response from server');
+            if (!token) {
+                throw new Error('Invalid response from server - No token received');
             }
             
-            const enhancedUserData = {
-                ...userData,
-                userId: userData._id || userData.userId
-            };
-            
+            // Set token immediately
             setAuthToken(token);
-            setUser(enhancedUserData);
-            setIsAuthenticated(true);
             
-            if (rememberMe) {
-                localStorage.setItem('rememberEmail', email);
-            } else {
-                localStorage.removeItem('rememberEmail');
+            // Get user profile data
+            try {
+                const profileResponse = await axios.get('/api/auth/profile');
+                const userData = profileResponse.data.userData || profileResponse.data;
+                
+                const enhancedUserData = {
+                    ...userData,
+                    userId: userData._id || userData.userId
+                };
+                
+                setUser(enhancedUserData);
+                setIsAuthenticated(true);
+                
+                if (rememberMe) {
+                    localStorage.setItem('rememberEmail', email);
+                } else {
+                    localStorage.removeItem('rememberEmail');
+                }
+                
+                localStorage.setItem('user', JSON.stringify(enhancedUserData));
+                
+                console.log('Login successful');
+                return enhancedUserData;
+            } catch (profileError) {
+                console.error('Profile fetch error:', profileError);
+                // Still set authenticated state
+                setIsAuthenticated(true);
+                
+                // Create minimal user object
+                const minimalUser = {
+                    email: email,
+                    userId: 'temp_' + Date.now()
+                };
+                
+                setUser(minimalUser);
+                localStorage.setItem('user', JSON.stringify(minimalUser));
+                
+                return minimalUser;
             }
-            
-            localStorage.setItem('user', JSON.stringify(enhancedUserData));
-            
-            console.log('Login successful');
-            return enhancedUserData;
         } catch (err) {
             console.error('Login error:', err);
             
@@ -220,6 +237,8 @@ export const AuthProvider = ({ children }) => {
                 }
             } else if (err.request) {
                 errorMessage = 'No response from server. Please make sure backend is running.';
+            } else {
+                errorMessage = err.message || 'An unexpected error occurred';
             }
             
             setError(errorMessage);
@@ -229,66 +248,86 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // FIXED: Enhanced Register function - UPDATED FIELD NAMES
-    const register = async (userData) => {
-        setError('');
-        setLoading(true);
-        
-        try {
-            console.log('Register attempt:', userData.email);
-            
-            // FIX: Use field names that match your User model
-            const response = await axios.post('/api/auth/register', {
-                fullName: `${userData.firstName} ${userData.lastName}`,
-                username: userData.email.split('@')[0], // Generate username from email
-                email: userData.email,
-                password: userData.password,
-                phone: userData.phone,
-                role: userData.role || ROLES.GUEST
-            });
-            
-            console.log('Register response:', response.data);
-            
-            const { token, user: userDataRes } = response.data;
-            
-            if (!token || !userDataRes) {
-                throw new Error('Invalid response from server');
-            }
-            
-            const enhancedUserData = {
-                ...userDataRes,
-                userId: userDataRes._id || userDataRes.userId
-            };
-            
-            setAuthToken(token);
-            setUser(enhancedUserData);
-            setIsAuthenticated(true);
-            localStorage.setItem('user', JSON.stringify(enhancedUserData));
-            
-            return enhancedUserData;
-        } catch (err) {
-            console.error('Register error:', err);
-            
-            let errorMessage = 'Registration failed. Please try again.';
-            
-            if (err.response?.data?.message) {
-                errorMessage = err.response.data.message;
-            } else if (err.request) {
-                errorMessage = 'No response from server. Check backend connection.';
-            }
-            
-            setError(errorMessage);
-            throw new Error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
+    // Register function - UPDATED to match your backend
+    // In AuthContext.jsx, replace the register function with this:
+
+const register = async (formData) => {
+  setError('');
+  setLoading(true);
+  
+  console.log('Register function received:', formData);
+  
+  try {
+    // Create the data structure your backend expects
+    const backendData = {
+      fullName: `${formData.firstName} ${formData.lastName}`,
+      username: formData.email.split('@')[0] + Math.floor(Math.random() * 1000),
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.password,
+      role: 'user'  // Default role for registration
     };
+    
+    console.log('Sending to backend:', backendData);
+    
+    const response = await axios.post('/api/auth/register', backendData);
+    
+    console.log('Backend response:', response.data);
+    
+    const { token, user: userData } = response.data;
+    
+    if (!token) {
+      throw new Error('No token received from server');
+    }
+    
+    // Set auth token
+    setAuthToken(token);
+    
+    // Create user object
+    const enhancedUserData = {
+      ...userData,
+      userId: userData._id || userData.userId,
+      fullName: backendData.fullName,
+      email: backendData.email,
+      role: userData.role || 'user'
+    };
+    
+    // Update state
+    setUser(enhancedUserData);
+    setIsAuthenticated(true);
+    
+    // Save to localStorage
+    localStorage.setItem('user', JSON.stringify(enhancedUserData));
+    localStorage.setItem('token', token);
+    
+    console.log('Registration successful');
+    return enhancedUserData;
+    
+  } catch (err) {
+    console.error('Registration error:', err.response?.data || err.message);
+    
+    let errorMessage = 'Registration failed. Please try again.';
+    
+    if (err.response?.data?.message) {
+      errorMessage = err.response.data.message;
+    } else if (err.request) {
+      errorMessage = 'Cannot connect to server. Please check if backend is running.';
+    } else {
+      errorMessage = err.message || 'An unexpected error occurred';
+    }
+    
+    setError(errorMessage);
+    throw new Error(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
     // Get user profile
     const getProfile = async () => {
         try {
-            const response = await axios.get('/users/me');
-            const updatedUser = response.data.user || response.data;
+            const response = await axios.get('/api/auth/profile');
+            const updatedUser = response.data.userData || response.data;
             const enhancedUser = {
                 ...updatedUser,
                 userId: updatedUser._id || updatedUser.userId
@@ -313,8 +352,8 @@ export const AuthProvider = ({ children }) => {
                 throw new Error('User ID not found');
             }
             
-            const response = await axios.put(`/users/update/${userId}`, data);
-            const updatedUser = response.data.user || response.data;
+            const response = await axios.put(`/api/auth/update/${userId}`, data);
+            const updatedUser = response.data.updateUser || response.data;
             const enhancedUser = {
                 ...updatedUser,
                 userId: updatedUser._id || updatedUser.userId
@@ -330,12 +369,12 @@ export const AuthProvider = ({ children }) => {
 
     // Check if user has specific role
     const hasRole = (role) => {
-        return user?.role === role; // lowercase 'role'
+        return user?.role === role;
     };
 
     // Check if user has any of the given roles
     const hasAnyRole = (roles) => {
-        return roles.includes(user?.role); // lowercase 'role'
+        return roles.includes(user?.role);
     };
 
     // Check if user has permission
@@ -348,7 +387,7 @@ export const AuthProvider = ({ children }) => {
     const getDashboardRoute = () => {
         if (!user) return '/login';
         
-        switch (user.role) { // lowercase 'role'
+        switch (user.role) {
             case ROLES.ADMIN:
             case ROLES.MANAGER:
                 return '/admin/dashboard';

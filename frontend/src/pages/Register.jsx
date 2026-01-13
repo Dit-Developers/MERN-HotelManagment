@@ -97,19 +97,25 @@ const Register = () => {
     }
     
     try {
-      await register({
+      // Format the data correctly for the register function
+      const registrationData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
         password: formData.password
-      });
+        // role will default to 'user' in AuthContext
+      };
+      
+      console.log('Submitting registration:', registrationData);
+      
+      await register(registrationData);
       
       // Navigate to home or dashboard after successful registration
       navigate('/');
     } catch (err) {
       // Error is already handled in auth context
-      console.log('Registration error caught:', err.message);
+      console.log('Registration error caught in component:', err.message);
     }
   };
 
@@ -162,7 +168,7 @@ const Register = () => {
                     onChange={handleChange}
                     disabled={loading}
                     className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
-                      errors.firstName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      errors.firstName ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                     } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                     style={{ borderColor: errors.firstName ? undefined : '#215E61' }}
                   />
@@ -184,7 +190,7 @@ const Register = () => {
                     onChange={handleChange}
                     disabled={loading}
                     className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
-                      errors.lastName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      errors.lastName ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                     } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                     style={{ borderColor: errors.lastName ? undefined : '#215E61' }}
                   />
@@ -209,7 +215,7 @@ const Register = () => {
                   onChange={handleChange}
                   disabled={loading}
                   className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
-                    errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                   } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   style={{ borderColor: errors.email ? undefined : '#215E61' }}
                   placeholder="you@example.com"
@@ -234,7 +240,7 @@ const Register = () => {
                   onChange={handleChange}
                   disabled={loading}
                   className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
-                    errors.phone ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    errors.phone ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                   } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   style={{ borderColor: errors.phone ? undefined : '#215E61' }}
                   placeholder="+1 234 567 8900"
@@ -259,7 +265,7 @@ const Register = () => {
                     onChange={handleChange}
                     disabled={loading}
                     className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
-                      errors.password ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      errors.password ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                     } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                     style={{ borderColor: errors.password ? undefined : '#215E61' }}
                     placeholder="••••••••"
@@ -285,7 +291,7 @@ const Register = () => {
                     onChange={handleChange}
                     disabled={loading}
                     className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-1 sm:text-sm transition-colors ${
-                      errors.confirmPassword ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      errors.confirmPassword ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                     } ${loading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                     style={{ borderColor: errors.confirmPassword ? undefined : '#215E61' }}
                     placeholder="••••••••"
