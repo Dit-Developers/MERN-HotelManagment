@@ -31,6 +31,7 @@ var userSchema = new mongoose.Schema({
     enum: ["admin", "user"],
     default: "user",
   },
+  
   status:{
     type:String,
     enum:["active", "inactive"],
