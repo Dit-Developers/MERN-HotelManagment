@@ -1,7 +1,7 @@
 const userModel = require("../Models/UserModel");
 const jwt = require("jsonwebtoken");
-const activeUserStatus = "active";
-const inactiveUserStatus = "inactive";
+const activeUserStatus = "true";
+const inactiveUserStatus = "false";
 
 
 //  AUTHENTICATION API 
@@ -11,7 +11,9 @@ const register = async (req, res) => {
     const { fullName, username, phone, email, password, role } = req.body;
 
     const userExists = await userModel.findOne({ email: email });
-    if (userExists) { return res.json({ message: "User already exists" }); }
+    if (userExists) { 
+      return res.status(400).json({ message: "User already exists" }); 
+    }
 
     const newUser = await userModel.create({
       fullName: fullName,
@@ -32,10 +34,25 @@ const register = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
-    if (newUser) { return res.status(200).json({ message: "User has been created successfully" }); }
+    
+    if (newUser) { 
+      return res.status(201).json({ 
+        message: "User has been created successfully",
+        token,
+        user: {
+          _id: newUser._id,
+          fullName: newUser.fullName,
+          username: newUser.username,
+          email: newUser.email,
+          phone: newUser.phone,
+          role: newUser.role,
+          status: newUser.status
+        }
+      }); 
+    }
   } catch (error) {
     console.log("An error occurred", error.message);
-    return res.json({ message: "An error occurred", error });
+    return res.status(500).json({ message: "An error occurred", error });
   }
 };
 
@@ -46,12 +63,15 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     const user = await userModel.findOne({ email });
-    if (!user) { return res.json({ message: "Invalid credentials" }); }
+    if (!user) { return res.status(404).json({ message: "Invalid credentials" }); }
 
     const isMatch = await user.comparePassword(password);
-    if (!isMatch) { return res.json({ message: "Invalid credentials" }); }
+    if (!isMatch) { return res.status(401).json({ message: "Invalid credentials" }); }
 
-    if (user.status === inactiveUserStatus) { return res.json({ message: "Your account is inactive" }); }
+    if (user.status === inactiveUserStatus) { 
+      return res.status(403).json({ message: "Your account is inactive" }); 
+    }
+    
     const token = jwt.sign(
       {
         userId: user._id,
@@ -62,10 +82,24 @@ const login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    return res.json({ message: "User logged in successfully", token });
+    // FIX: Return user data along with token
+    return res.json({ 
+      message: "User logged in successfully", 
+      token,
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        status: user.status
+      }
+    });
+    
   } catch (error) {
     console.log("An error occurred in login API", error.message);
-    return res.json({ message: "An error occurred", error });
+    return res.status(500).json({ message: "An error occurred", error });
   }
 };
 
@@ -76,23 +110,28 @@ const profileData = async (req, res) => {
     const findUser = await userModel.findOne({ _id: req.user._id, status: activeUserStatus });
 
     if (!findUser) {
-      return res.json({ message: "Unable to find User" });
+      return res.status(404).json({ message: "Unable to find User" });
     }
 
+    // Remove password from response
     var userData = {
+      _id: findUser._id,  // Add _id
       fullName: findUser.fullName,
       email: findUser.email,
       username: findUser.username,
       phone: findUser.phone,
       role: findUser.role,
-      password: findUser.password,
       status: findUser.status
+      // Removed password for security
     };
 
-    return res.json({ message: "Here is your user data", userData });
+    return res.json({ 
+      message: "Here is your user data", 
+      user: userData  // Change from userData to user for consistency
+    });
   } catch (error) {
     console.log("An error occurred in profile API", error.message);
-    return res.json({ message: "An error occurred", error });
+    return res.status(500).json({ message: "An error occurred", error });
   }
 };
 

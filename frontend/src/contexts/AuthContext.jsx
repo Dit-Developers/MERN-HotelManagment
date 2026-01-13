@@ -175,10 +175,9 @@ export const AuthProvider = ({ children }) => {
         console.log('Login attempt:', { email });
         
         try {
-            // FIX: Use lowercase field names to match backend
-            const response = await axios.post('/users/login', {
-                email: email,    // lowercase 'email'
-                password: password // lowercase 'password'
+           const response = await axios.post('/api/auth/login', {
+                email: email,
+                password: password
             });
             
             console.log('Login response:', response.data);
@@ -239,7 +238,7 @@ export const AuthProvider = ({ children }) => {
             console.log('Register attempt:', userData.email);
             
             // FIX: Use field names that match your User model
-            const response = await axios.post('/users/register', {
+            const response = await axios.post('/api/auth/register', {
                 fullName: `${userData.firstName} ${userData.lastName}`,
                 username: userData.email.split('@')[0], // Generate username from email
                 email: userData.email,
