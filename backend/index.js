@@ -23,7 +23,7 @@ const paymentRouter = require("./Routes/payment-router");
 const reviewRouter = require('./Routes/review-router');
 
 // Use routes - Notice the base path is /api
-app.use("/api/auth", authRouter); // This makes login route: /api/auth/login
+app.use("/api", authRouter); // This makes login route: /api/auth/login
 // app.use("/api/room", roomRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/payment", paymentRouter);

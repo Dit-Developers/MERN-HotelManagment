@@ -22,7 +22,7 @@ const register = async (req, res) => {
       email: email,
       password: password,
       role: role,
-      status: "active"
+      status: "inactive"
     });
 
     const token = jwt.sign(

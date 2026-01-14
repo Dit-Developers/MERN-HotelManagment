@@ -1,107 +1,65 @@
-
-// src/App.jsx
-import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import ErrorBoundary from './components/ErrorBoundary';
-import LoadingSpinner from './components/LoadingSpinner';
-import ProtectedRoute from './Components/ProtectedRoute';
-import Navbar from './components/Navbar';
-
-// Lazy load components for better performance
-const Login = React.lazy(() => import('./Pages/Login'));
-const Register = React.lazy(() => import('./Pages/Register'));
-const Home = React.lazy(() => import('./pages/Home'));
-const Profile = React.lazy(() => import('./Pages/Profile'));
-const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
-const ReceptionDashboard = React.lazy(() => import('./pages/reception/Dashboard'));
-const HousekeepingTasks = React.lazy(() => import('./pages/housekeeping/Tasks'));
-const Rooms = React.lazy(() => import('./pages/Rooms'));
-const Gallery = React.lazy(() => import('./pages/Gallery'));
-const BookNow = React.lazy(() => import('./pages/MyBookings'));
-const Contact = React.lazy(() => import('./pages/Contact'));
-const MyBookings = React.lazy(() => import('./pages/MyBookings'));
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import AdminDashboard from './pages/AdminDashboard';
+import ManagerDashboard from './pages/ManagerDashboard';
+import ReceptionDashboard from './pages/ReceptionDashboard';
+import StaffDashboard from './pages/StaffDashboard';
+import GuestDashboard from './pages/GuestDashboard';
 
 function App() {
+  // Simple route protection function
+  const ProtectedRoute = ({ children }) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return <Navigate to="/login" />;
+    }
+    return children;
+  };
+
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <AuthProvider>
-          <div className="min-h-screen bg-gray-50">
-            <Navbar />
-            <Suspense fallback={<LoadingSpinner fullScreen />}>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/rooms" element={<Rooms />} />
-                <Route path="/gallery" element={<Gallery />} />
-                <Route path="/contact" element={<Contact />} />
-                
-                {/* Protected routes - different access based on role */}
-                <Route path="/" element={
-                  <ProtectedRoute>
-                    <Home />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/profile" element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/booknow" element={
-                  <ProtectedRoute>
-                    <BookNow />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/my-bookings" element={
-                  <ProtectedRoute requiredRoles={['guest']}>
-                    <MyBookings />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Admin routes */}
-                <Route path="/admin/dashboard" element={
-                  <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/admin/*" element={
-                  <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Reception routes */}
-                <Route path="/reception/dashboard" element={
-                  <ProtectedRoute requiredRoles={['receptionist', 'admin', 'manager']}>
-                    <ReceptionDashboard />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Housekeeping routes */}
-                <Route path="/housekeeping/tasks" element={
-                  <ProtectedRoute requiredRoles={['housekeeping', 'admin', 'manager']}>
-                    <HousekeepingTasks />
-                  </ProtectedRoute>
-                } />
-                
-                {/* 404 route - redirect based on authentication */}
-                <Route path="*" element={
-                  <ProtectedRoute>
-                    <Navigate to="/" replace />
-                  </ProtectedRoute>
-                } />
-              </Routes>
-            </Suspense>
-          </div>
-        </AuthProvider>
-      </BrowserRouter>
-    </ErrorBoundary>
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        
+        {/* Protected Dashboard Routes */}
+        <Route path="/admin-dashboard" element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/manager-dashboard" element={
+          <ProtectedRoute>
+            <ManagerDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/reception-dashboard" element={
+          <ProtectedRoute>
+            <ReceptionDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/staff-dashboard" element={
+          <ProtectedRoute>
+            <StaffDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/guest-dashboard" element={
+          <ProtectedRoute>
+            <GuestDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* Default Route */}
+        <Route path="/" element={<Navigate to="/login" />} />
+      </Routes>
+    </Router>
   );
 }
 
