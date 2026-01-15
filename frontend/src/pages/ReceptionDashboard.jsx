@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 
 function ReceptionDashboard() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('createGuest');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   
   // Guest Form State
   const [guestForm, setGuestForm] = useState({
@@ -14,7 +14,9 @@ function ReceptionDashboard() {
     phone: '',
     address: '',
     idType: 'passport',
-    idNumber: ''
+    idNumber: '',
+    username: '',
+    password: 'guest123' // Default password
   });
   
   // Booking Form State
@@ -29,14 +31,12 @@ function ReceptionDashboard() {
   // Check-in Form State
   const [checkinForm, setCheckinForm] = useState({
     bookingId: '',
-    roomId: '',
-    checkinTime: ''
+    roomId: ''
   });
   
   // Check-out Form State
   const [checkoutForm, setCheckoutForm] = useState({
     bookingId: '',
-    checkoutTime: '',
     extraCharges: 0
   });
   
@@ -55,100 +55,233 @@ function ReceptionDashboard() {
   const [bookings, setBookings] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   
+  const API_URL = 'http://localhost:5000/api';
+  const token = localStorage.getItem('token');
+
   // Load user data on component mount
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user'));
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
     setUser(userData);
-    fetchGuests();
-    fetchRooms();
-    fetchBookings();
+    fetchAllData();
   }, []);
   
-  // Fetch guests
-  const fetchGuests = async () => {
+  // Fetch all data
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchGuests(),
+        fetchRooms(),
+        fetchBookings()
+      ]);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch data');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+ // Fetch guests - Enhanced with better debugging
+const fetchGuests = async () => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      console.log("No token found");
+      return;
+    }
 
-    const response = await axios.get('http://localhost:5000/api/get-all-users', {
-      headers: { Authorization: `Bearer ${token}` }
+    console.log("Fetching guests from:", `${API_URL}/get-all-users`);
+    
+    const response = await fetch(`${API_URL}/get-all-users`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
-
-    // Sirf role='guest' wale users select karein
-    const guestsOnly = (response.data.allUsers || []).filter(user => user.role === 'guest');
-
-    console.log("Guests fetched:", guestsOnly); // debug purpose
+    
+    console.log("Response status:", response.status);
+    
+    const data = await response.json();
+    console.log("Raw API response for guests:", data);
+    
+    // Debug: Log the structure of the response
+    console.log("Response keys:", Object.keys(data));
+    
+    // Try different possible data structures
+    let allUsers = [];
+    
+    if (Array.isArray(data)) {
+      // Case 1: API returns array directly
+      allUsers = data;
+      console.log("Data is direct array");
+    } else if (Array.isArray(data?.allUsers)) {
+      // Case 2: API returns {allUsers: [...]}
+      allUsers = data.allUsers;
+      console.log("Data found in allUsers property");
+    } else if (Array.isArray(data?.users)) {
+      // Case 3: API returns {users: [...]}
+      allUsers = data.users;
+      console.log("Data found in users property");
+    } else if (data?.allUsers && typeof data.allUsers === 'object') {
+      // Case 4: API returns {allUsers: {data: [...]}}
+      if (Array.isArray(data.allUsers.data)) {
+        allUsers = data.allUsers.data;
+        console.log("Data found in allUsers.data property");
+      }
+    } else if (data?.data && Array.isArray(data.data)) {
+      // Case 5: API returns {data: [...]}
+      allUsers = data.data;
+      console.log("Data found in data property");
+    }
+    
+    console.log("Parsed allUsers:", allUsers);
+    
+    // Filter guests only - more flexible filtering
+    const guestsOnly = allUsers.filter(user => {
+      const userRole = user?.role?.toLowerCase();
+      return userRole === 'guest' || !userRole || userRole === 'user';
+    });
+    
+    console.log("Filtered guests:", guestsOnly);
+    console.log("Total users found:", allUsers.length);
+    console.log("Guests found:", guestsOnly.length);
+    
     setGuests(guestsOnly);
   } catch (error) {
-    console.log('Error fetching guests:', error.response?.data || error.message);
+    console.log('Error fetching guests:', error.message);
+    console.log('Error stack:', error.stack);
   }
 };
-
   
-  // Fetch rooms
+  // Fetch rooms - Fixed to match Admin Dashboard method
   const fetchRooms = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/room/all-rooms', {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await fetch(`${API_URL}/room/all-rooms`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      setRooms(response.data.findRooms || []);
+      
+      const data = await response.json();
+      
+      // Handle different data structures
+      let roomsData = [];
+      if (Array.isArray(data)) {
+        roomsData = data;
+      } else if (Array.isArray(data?.findRooms)) {
+        roomsData = data.findRooms;
+      } else if (Array.isArray(data?.rooms)) {
+        roomsData = data.rooms;
+      }
+      
+      console.log("Rooms data received:", data);
+      console.log("Rooms parsed:", roomsData);
+      
+      setRooms(roomsData);
+      
       // Filter available rooms
-      const available = response.data.findRooms?.filter(room => 
-        room.isAvailable && room.roomStatus === 'available'
-      ) || [];
+      const available = roomsData.filter(room => 
+        (room.isAvailable === true || room.isAvailable === 'true') && 
+        room.roomStatus === 'available'
+      );
       setAvailableRooms(available);
     } catch (error) {
       console.log('Error fetching rooms:', error);
+      setError('Failed to fetch rooms');
     }
   };
   
-  // Fetch bookings
+  // Fetch bookings - Fixed to match Admin Dashboard method
   const fetchBookings = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/booking/all-bookings', {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await fetch(`${API_URL}/booking/all-bookings`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      setBookings(response.data.allBookings || []);
+      
+      const data = await response.json();
+      
+      // Handle different data structures
+      let bookingsData = [];
+      if (Array.isArray(data?.allBookings)) {
+        bookingsData = data.allBookings;
+      } else if (Array.isArray(data)) {
+        bookingsData = data;
+      } else if (Array.isArray(data?.bookings)) {
+        bookingsData = data.bookings;
+      }
+      
+      console.log("Bookings fetched:", bookingsData);
+      setBookings(bookingsData);
     } catch (error) {
       console.log('Error fetching bookings:', error);
+      setError('Failed to fetch bookings');
     }
   };
   
+  // Generic API call function
+  const apiCall = async (method, endpoint, data = null) => {
+    setError('');
+    setSuccess('');
+    try {
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const options = { method, headers };
+      if (data) options.body = JSON.stringify(data);
+
+      const response = await fetch(`${API_URL}${endpoint}`, options);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Request failed');
+      }
+
+      setSuccess(result.message || 'Operation successful');
+      fetchAllData(); // Refresh all data
+      return result;
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
   // Create Guest
   const handleCreateGuest = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
     
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/register', {
+      await apiCall('POST', '/register', {
         fullName: guestForm.fullName,
+        username: guestForm.username || guestForm.email.split('@')[0],
         email: guestForm.email,
         phone: guestForm.phone,
         address: guestForm.address,
         idType: guestForm.idType,
         idNumber: guestForm.idNumber,
+        password: guestForm.password,
         role: 'guest',
         status: 'active'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
-      setMessage('Guest created successfully!');
       setGuestForm({
         fullName: '',
         email: '',
         phone: '',
         address: '',
         idType: 'passport',
-        idNumber: ''
+        idNumber: '',
+        username: '',
+        password: 'guest123'
       });
-      fetchGuests();
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Failed to create guest');
+      console.error('Error creating guest:', error);
     }
     setLoading(false);
   };
@@ -157,11 +290,9 @@ function ReceptionDashboard() {
   const handleCreateBooking = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
     
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/booking/create-booking', {
+      await apiCall('POST', '/booking/create-booking', {
         guestId: bookingForm.guestId,
         roomId: bookingForm.roomId,
         bookingDate: new Date().toISOString().split('T')[0],
@@ -169,11 +300,8 @@ function ReceptionDashboard() {
         checkoutDate: bookingForm.checkoutDate,
         guestsCount: bookingForm.guestsCount,
         bookingStatus: 'confirmed'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
-      setMessage('Booking created successfully!');
       setBookingForm({
         guestId: '',
         roomId: '',
@@ -181,10 +309,8 @@ function ReceptionDashboard() {
         checkoutDate: '',
         guestsCount: 1
       });
-      fetchBookings();
-      fetchRooms();
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Failed to create booking');
+      console.error('Error creating booking:', error);
     }
     setLoading(false);
   };
@@ -193,35 +319,20 @@ function ReceptionDashboard() {
   const handleCheckin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
     
     try {
-      const token = localStorage.getItem('token');
-      
       // Update booking status
-      await axios.put(`http://localhost:5000/api/bookings/${checkinForm.bookingId}/status`, {
+      await apiCall('PUT', `/booking/update-booking-status/${checkinForm.bookingId}`, {
         bookingStatus: 'checked-in'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
       // Update room status
-      await axios.put(`http://localhost:5000/api/rooms/${checkinForm.roomId}/status`, {
-        status: 'occupied'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      await apiCall('PUT', `/room/update-room-status/${checkinForm.roomId}`, {
+        roomStatus: 'occupied',
+        isAvailable: false
       });
-      
-      setMessage('Check-in successful!');
-      setCheckinForm({
-        bookingId: '',
-        roomId: '',
-        checkinTime: ''
-      });
-      fetchBookings();
-      fetchRooms();
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Check-in failed');
+      console.error('Error checking in:', error);
     }
     setLoading(false);
   };
@@ -230,35 +341,25 @@ function ReceptionDashboard() {
   const handleCheckout = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
     
     try {
-      const token = localStorage.getItem('token');
-      
       // Update booking status
-      await axios.put(`http://localhost:5000/api/bookings/${checkoutForm.bookingId}/status`, {
+      await apiCall('PUT', `/booking/update-booking-status/${checkoutForm.bookingId}`, {
         bookingStatus: 'checked-out'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
       // Update room status to cleaning
-      await axios.put(`http://localhost:5000/api/rooms/${checkoutForm.roomId}/status`, {
-        status: 'cleaning'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      await apiCall('PUT', `/room/update-room-status/${checkoutForm.roomId}`, {
+        roomStatus: 'cleaning',
+        isAvailable: false
       });
       
-      setMessage('Check-out successful! Room marked for cleaning.');
       setCheckoutForm({
         bookingId: '',
-        checkoutTime: '',
         extraCharges: 0
       });
-      fetchBookings();
-      fetchRooms();
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Check-out failed');
+      console.error('Error checking out:', error);
     }
     setLoading(false);
   };
@@ -267,7 +368,6 @@ function ReceptionDashboard() {
   const handleGenerateBill = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
     
     try {
       // Calculate total
@@ -276,33 +376,14 @@ function ReceptionDashboard() {
       const discountAmount = (subtotal * billForm.discount) / 100;
       const total = subtotal + taxAmount - discountAmount;
       
-      const token = localStorage.getItem('token');
-      
       // Process payment
-      const paymentResponse = await axios.post('http://localhost:5000/api/payments/process-payment', {
+      await apiCall('POST', '/payment/process-payment', {
         bookingId: billForm.bookingId,
         amount: total,
         paymentMethod: 'cash',
-        currency: 'USD',
-        paymentStatus: 'completed'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+        status: 'completed'
       });
       
-      // Create bill record (you need to create a bills API)
-      // await axios.post('http://localhost:5000/api/bills', {
-      //   bookingId: billForm.bookingId,
-      //   roomCharges: billForm.roomCharges,
-      //   serviceCharges: billForm.serviceCharges,
-      //   tax: taxAmount,
-      //   discount: discountAmount,
-      //   total: total,
-      //   status: 'paid'
-      // }, {
-      //   headers: { Authorization: `Bearer ${token}` }
-      // });
-      
-      setMessage(`Bill generated successfully! Total: $${total.toFixed(2)}`);
       setBillForm({
         bookingId: '',
         roomCharges: 0,
@@ -311,7 +392,7 @@ function ReceptionDashboard() {
         discount: 0
       });
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Failed to generate bill');
+      console.error('Error generating bill:', error);
     }
     setLoading(false);
   };
@@ -323,19 +404,32 @@ function ReceptionDashboard() {
   };
   
   if (!user) {
-    return <div>Loading...</div>;
+    return <div style={styles.loading}>Loading user data...</div>;
   }
+  
+  // Format date for input fields
+  const formatDateForInput = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0];
+  };
   
   return (
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
-        <h2>Reception Dashboard</h2>
-        <p>Welcome, {user.fullName}! ({user.role})</p>
+        <div>
+          <h2>Reception Dashboard</h2>
+          <p>Welcome, {user.fullName}! ({user.role})</p>
+        </div>
         <button onClick={handleLogout} style={styles.logoutBtn}>
           Logout
         </button>
       </div>
+      
+      {/* Messages */}
+      {error && <div style={styles.errorMessage}>{error}</div>}
+      {success && <div style={styles.successMessage}>{success}</div>}
       
       {/* Tabs */}
       <div style={styles.tabs}>
@@ -387,14 +481,14 @@ function ReceptionDashboard() {
         >
           View Bookings
         </button>
+        <button 
+          style={styles.refreshBtn}
+          onClick={fetchAllData}
+          disabled={loading}
+        >
+          {loading ? 'Loading...' : '🔄 Refresh'}
+        </button>
       </div>
-      
-      {/* Message */}
-      {message && (
-        <div style={message.includes('success') ? styles.successMessage : styles.errorMessage}>
-          {message}
-        </div>
-      )}
       
       {/* Content */}
       <div style={styles.content}>
@@ -446,27 +540,52 @@ function ReceptionDashboard() {
                 />
               </div>
               
-              <div style={styles.formGroup}>
-                <label>ID Type</label>
-                <select
-                  value={guestForm.idType}
-                  onChange={(e) => setGuestForm({...guestForm, idType: e.target.value})}
-                  style={styles.input}
-                >
-                  <option value="passport">Passport</option>
-                  <option value="driving_license">Driving License</option>
-                  <option value="national_id">National ID</option>
-                </select>
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label>ID Type</label>
+                  <select
+                    value={guestForm.idType}
+                    onChange={(e) => setGuestForm({...guestForm, idType: e.target.value})}
+                    style={styles.input}
+                  >
+                    <option value="passport">Passport</option>
+                    <option value="driving_license">Driving License</option>
+                    <option value="national_id">National ID</option>
+                  </select>
+                </div>
+                
+                <div style={styles.formGroup}>
+                  <label>ID Number</label>
+                  <input
+                    type="text"
+                    value={guestForm.idNumber}
+                    onChange={(e) => setGuestForm({...guestForm, idNumber: e.target.value})}
+                    style={styles.input}
+                  />
+                </div>
               </div>
               
-              <div style={styles.formGroup}>
-                <label>ID Number</label>
-                <input
-                  type="text"
-                  value={guestForm.idNumber}
-                  onChange={(e) => setGuestForm({...guestForm, idNumber: e.target.value})}
-                  style={styles.input}
-                />
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label>Username</label>
+                  <input
+                    type="text"
+                    value={guestForm.username}
+                    onChange={(e) => setGuestForm({...guestForm, username: e.target.value})}
+                    style={styles.input}
+                    placeholder="Auto-generated from email"
+                  />
+                </div>
+                
+                <div style={styles.formGroup}>
+                  <label>Password</label>
+                  <input
+                    type="password"
+                    value={guestForm.password}
+                    onChange={(e) => setGuestForm({...guestForm, password: e.target.value})}
+                    style={styles.input}
+                  />
+                </div>
               </div>
               
               <button type="submit" style={styles.submitBtn} disabled={loading}>
@@ -490,7 +609,7 @@ function ReceptionDashboard() {
                   required
                 >
                   <option value="">Select a guest</option>
-                  {guests.map(guest => (
+                  {Array.isArray(guests) && guests.map(guest => (
                     <option key={guest._id} value={guest._id}>
                       {guest.fullName} ({guest.email})
                     </option>
@@ -507,11 +626,15 @@ function ReceptionDashboard() {
                   required
                 >
                   <option value="">Select a room</option>
-                  {availableRooms.map(room => (
-                    <option key={room._id} value={room._id}>
-                      Room {room.roomNumber} - {room.roomType} (${room.pricePerNight}/night)
-                    </option>
-                  ))}
+                  {Array.isArray(availableRooms) && availableRooms.length > 0 ? (
+                    availableRooms.map(room => (
+                      <option key={room._id} value={room._id}>
+                        Room {room.roomNumber} - {room.roomType} (${room.pricePerNight}/night)
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>No available rooms</option>
+                  )}
                 </select>
               </div>
               
@@ -524,6 +647,7 @@ function ReceptionDashboard() {
                     onChange={(e) => setBookingForm({...bookingForm, checkinDate: e.target.value})}
                     style={styles.input}
                     required
+                    min={formatDateForInput(new Date())}
                   />
                 </div>
                 
@@ -535,6 +659,7 @@ function ReceptionDashboard() {
                     onChange={(e) => setBookingForm({...bookingForm, checkoutDate: e.target.value})}
                     style={styles.input}
                     required
+                    min={bookingForm.checkinDate || formatDateForInput(new Date())}
                   />
                 </div>
               </div>
@@ -544,9 +669,9 @@ function ReceptionDashboard() {
                 <input
                   type="number"
                   min="1"
-                  max="4"
+                  max="10"
                   value={bookingForm.guestsCount}
-                  onChange={(e) => setBookingForm({...bookingForm, guestsCount: e.target.value})}
+                  onChange={(e) => setBookingForm({...bookingForm, guestsCount: parseInt(e.target.value) || 1})}
                   style={styles.input}
                 />
               </div>
@@ -568,9 +693,9 @@ function ReceptionDashboard() {
                 <select
                   value={checkinForm.bookingId}
                   onChange={(e) => {
-                    const booking = bookings.find(b => b._id === e.target.value);
+                    const booking = Array.isArray(bookings) ? 
+                      bookings.find(b => b._id === e.target.value) : null;
                     setCheckinForm({
-                      ...checkinForm,
                       bookingId: e.target.value,
                       roomId: booking?.roomId || ''
                     });
@@ -579,11 +704,11 @@ function ReceptionDashboard() {
                   required
                 >
                   <option value="">Select a booking</option>
-                  {bookings
+                  {Array.isArray(bookings) && bookings
                     .filter(b => b.bookingStatus === 'confirmed')
                     .map(booking => (
                       <option key={booking._id} value={booking._id}>
-                        Booking #{booking._id.substring(0, 8)} - Guest: {booking.guestId}
+                        Booking #{booking._id?.substring(0, 8)} - Guest: {booking.guestId}
                       </option>
                     ))
                   }
@@ -600,17 +725,7 @@ function ReceptionDashboard() {
                 />
               </div>
               
-              <div style={styles.formGroup}>
-                <label>Check-in Time</label>
-                <input
-                  type="datetime-local"
-                  value={checkinForm.checkinTime}
-                  onChange={(e) => setCheckinForm({...checkinForm, checkinTime: e.target.value})}
-                  style={styles.input}
-                />
-              </div>
-              
-              <button type="submit" style={styles.submitBtn} disabled={loading}>
+              <button type="submit" style={styles.submitBtn} disabled={loading || !checkinForm.bookingId}>
                 {loading ? 'Processing...' : 'Check-in Guest'}
               </button>
             </form>
@@ -627,9 +742,9 @@ function ReceptionDashboard() {
                 <select
                   value={checkoutForm.bookingId}
                   onChange={(e) => {
-                    const booking = bookings.find(b => b._id === e.target.value);
+                    const booking = Array.isArray(bookings) ? 
+                      bookings.find(b => b._id === e.target.value) : null;
                     setCheckoutForm({
-                      ...checkoutForm,
                       bookingId: e.target.value,
                       roomId: booking?.roomId || ''
                     });
@@ -638,11 +753,11 @@ function ReceptionDashboard() {
                   required
                 >
                   <option value="">Select a booking</option>
-                  {bookings
+                  {Array.isArray(bookings) && bookings
                     .filter(b => b.bookingStatus === 'checked-in')
                     .map(booking => (
                       <option key={booking._id} value={booking._id}>
-                        Booking #{booking._id.substring(0, 8)} - Guest: {booking.guestId}
+                        Booking #{booking._id?.substring(0, 8)} - Guest: {booking.guestId}
                       </option>
                     ))
                   }
@@ -650,12 +765,12 @@ function ReceptionDashboard() {
               </div>
               
               <div style={styles.formGroup}>
-                <label>Check-out Time</label>
+                <label>Room ID</label>
                 <input
-                  type="datetime-local"
-                  value={checkoutForm.checkoutTime}
-                  onChange={(e) => setCheckoutForm({...checkoutForm, checkoutTime: e.target.value})}
+                  type="text"
+                  value={checkoutForm.roomId}
                   style={styles.input}
+                  readOnly
                 />
               </div>
               
@@ -671,7 +786,7 @@ function ReceptionDashboard() {
                 />
               </div>
               
-              <button type="submit" style={styles.submitBtn} disabled={loading}>
+              <button type="submit" style={styles.submitBtn} disabled={loading || !checkoutForm.bookingId}>
                 {loading ? 'Processing...' : 'Check-out Guest'}
               </button>
             </form>
@@ -692,11 +807,11 @@ function ReceptionDashboard() {
                   required
                 >
                   <option value="">Select a booking</option>
-                  {bookings
+                  {Array.isArray(bookings) && bookings
                     .filter(b => b.bookingStatus === 'checked-out')
                     .map(booking => (
                       <option key={booking._id} value={booking._id}>
-                        Booking #{booking._id.substring(0, 8)}
+                        Booking #{booking._id?.substring(0, 8)}
                       </option>
                     ))
                   }
@@ -766,28 +881,39 @@ function ReceptionDashboard() {
         {/* View Guests Tab */}
         {activeTab === 'viewGuests' && (
           <div>
-            <h3>All Guests</h3>
+            <div style={styles.tableHeader}>
+              <h3>All Guests ({Array.isArray(guests) ? guests.length : 0})</h3>
+              <button onClick={fetchGuests} style={styles.smallBtn} disabled={loading}>
+                {loading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
             <div style={styles.tableContainer}>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {guests.map(guest => (
-                    <tr key={guest._id}>
-                      <td>{guest.fullName}</td>
-                      <td>{guest.email}</td>
-                      <td>{guest.phone}</td>
-                      <td>{guest.status}</td>
+              {loading ? (
+                <div style={styles.loading}>Loading guests...</div>
+              ) : !Array.isArray(guests) || guests.length === 0 ? (
+                <div style={styles.noData}>No guests found</div>
+              ) : (
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.tableTh}>Name</th>
+                      <th style={styles.tableTh}>Email</th>
+                      <th style={styles.tableTh}>Phone</th>
+                      <th style={styles.tableTh}>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {guests.map(guest => (
+                      <tr key={guest._id}>
+                        <td style={styles.tableTd}>{guest.fullName}</td>
+                        <td style={styles.tableTd}>{guest.email}</td>
+                        <td style={styles.tableTd}>{guest.phone}</td>
+                        <td style={styles.tableTd}>{guest.status || 'active'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -795,62 +921,85 @@ function ReceptionDashboard() {
         {/* View Rooms Tab */}
         {activeTab === 'viewRooms' && (
           <div>
-            <h3>All Rooms</h3>
-            <div style={styles.roomsGrid}>
-              {rooms.map(room => (
-                <div key={room._id} style={styles.roomCard}>
-                  <h4>Room {room.roomNumber}</h4>
-                  <p>Type: {room.roomType}</p>
-                  <p>Price: ${room.pricePerNight}/night</p>
-                  <p>Status: 
-                    <span style={{
-                      color: room.roomStatus === 'available' ? 'green' :
-                             room.roomStatus === 'occupied' ? 'red' :
-                             room.roomStatus === 'cleaning' ? 'orange' : 'gray'
-                    }}>
-                      {room.roomStatus}
-                    </span>
-                  </p>
-                  <p>Available: {room.isAvailable ? 'Yes' : 'No'}</p>
-                </div>
-              ))}
+            <div style={styles.tableHeader}>
+              <h3>All Rooms ({Array.isArray(rooms) ? rooms.length : 0})</h3>
+              <button onClick={fetchRooms} style={styles.smallBtn} disabled={loading}>
+                {loading ? 'Loading...' : 'Refresh'}
+              </button>
             </div>
+            {loading ? (
+              <div style={styles.loading}>Loading rooms...</div>
+            ) : !Array.isArray(rooms) || rooms.length === 0 ? (
+              <div style={styles.noData}>No rooms found</div>
+            ) : (
+              <div style={styles.roomsGrid}>
+                {rooms.map(room => (
+                  <div key={room._id} style={styles.roomCard}>
+                    <h4>Room {room.roomNumber}</h4>
+                    <p>Type: {room.roomType}</p>
+                    <p>Price: ${room.pricePerNight || 0}/night</p>
+                    <p>Status: 
+                      <span style={{
+                        color: room.roomStatus === 'available' ? 'green' :
+                               room.roomStatus === 'occupied' ? 'red' :
+                               room.roomStatus === 'cleaning' ? 'orange' : 'gray'
+                      }}>
+                        {' ' + (room.roomStatus || 'available')}
+                      </span>
+                    </p>
+                    <p>Available: {room.isAvailable ? 'Yes' : 'No'}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
         
         {/* View Bookings Tab */}
         {activeTab === 'viewBookings' && (
           <div>
-            <h3>All Bookings</h3>
+            <div style={styles.tableHeader}>
+              <h3>All Bookings ({Array.isArray(bookings) ? bookings.length : 0})</h3>
+              <button onClick={fetchBookings} style={styles.smallBtn} disabled={loading}>
+                {loading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
             <div style={styles.tableContainer}>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Booking ID</th>
-                    <th>Guest</th>
-                    <th>Check-in</th>
-                    <th>Check-out</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map(booking => (
-                    <tr key={booking._id}>
-                      <td>{booking._id.substring(0, 8)}</td>
-                      <td>{booking.guestId}</td>
-                      <td>{new Date(booking.checkinDate).toLocaleDateString()}</td>
-                      <td>{new Date(booking.checkoutDate).toLocaleDateString()}</td>
-                      <td style={{
-                        color: booking.bookingStatus === 'confirmed' ? 'blue' :
-                               booking.bookingStatus === 'checked-in' ? 'green' :
-                               booking.bookingStatus === 'checked-out' ? 'orange' : 'gray'
-                      }}>
-                        {booking.bookingStatus}
-                      </td>
+              {loading ? (
+                <div style={styles.loading}>Loading bookings...</div>
+              ) : !Array.isArray(bookings) || bookings.length === 0 ? (
+                <div style={styles.noData}>No bookings found</div>
+              ) : (
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.tableTh}>Booking ID</th>
+                      <th style={styles.tableTh}>Guest</th>
+                      <th style={styles.tableTh}>Check-in</th>
+                      <th style={styles.tableTh}>Check-out</th>
+                      <th style={styles.tableTh}>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {bookings.map(booking => (
+                      <tr key={booking._id}>
+                        <td style={styles.tableTd}>{booking._id?.substring(0, 8) || 'N/A'}</td>
+                        <td style={styles.tableTd}>{booking.guestId || 'N/A'}</td>
+                        <td style={styles.tableTd}>{booking.checkinDate ? new Date(booking.checkinDate).toLocaleDateString() : 'N/A'}</td>
+                        <td style={styles.tableTd}>{booking.checkoutDate ? new Date(booking.checkoutDate).toLocaleDateString() : 'N/A'}</td>
+                        <td style={{
+                          ...styles.tableTd,
+                          color: booking.bookingStatus === 'confirmed' ? 'blue' :
+                                 booking.bookingStatus === 'checked-in' ? 'green' :
+                                 booking.bookingStatus === 'checked-out' ? 'orange' : 'gray'
+                        }}>
+                          {booking.bookingStatus}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -861,135 +1010,186 @@ function ReceptionDashboard() {
 
 const styles = {
   container: {
-    padding: '20px',
     minHeight: '100vh',
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f5f5f5',
+    fontFamily: 'Arial, sans-serif'
   },
   header: {
+    backgroundColor: '#2c3e50',
+    color: 'white',
+    padding: '20px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '30px',
-    paddingBottom: '20px',
-    borderBottom: '2px solid #ddd'
+    flexWrap: 'wrap'
   },
   logoutBtn: {
-    padding: '10px 20px',
+    padding: '8px 16px',
     backgroundColor: '#e74c3c',
     color: 'white',
     border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer'
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px'
+  },
+  errorMessage: {
+    backgroundColor: '#ffeaea',
+    color: '#d32f2f',
+    padding: '12px 20px',
+    margin: '0 20px 20px',
+    borderRadius: '4px',
+    borderLeft: '4px solid #d32f2f'
+  },
+  successMessage: {
+    backgroundColor: '#e8f5e9',
+    color: '#2e7d32',
+    padding: '12px 20px',
+    margin: '0 20px 20px',
+    borderRadius: '4px',
+    borderLeft: '4px solid #2e7d32'
   },
   tabs: {
     display: 'flex',
+    flexWrap: 'wrap',
     gap: '10px',
-    marginBottom: '20px',
-    flexWrap: 'wrap'
+    padding: '20px',
+    backgroundColor: 'white',
+    borderBottom: '2px solid #eee'
   },
   tab: {
     padding: '10px 20px',
     backgroundColor: '#ecf0f1',
     border: '1px solid #bdc3c7',
-    borderRadius: '5px',
-    cursor: 'pointer'
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px'
   },
   activeTab: {
     padding: '10px 20px',
     backgroundColor: '#3498db',
     color: 'white',
     border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer'
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px'
+  },
+  refreshBtn: {
+    padding: '10px 20px',
+    backgroundColor: '#2ecc71',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    marginLeft: 'auto'
   },
   content: {
-    padding: '20px',
-    backgroundColor: 'white',
-    borderRadius: '10px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+    padding: '20px'
+  },
+  loading: {
+    textAlign: 'center',
+    padding: '40px',
+    fontSize: '18px',
+    color: '#666'
   },
   formContainer: {
     maxWidth: '600px',
-    margin: '0 auto'
+    margin: '0 auto',
+    backgroundColor: 'white',
+    padding: '20px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
   },
   formGroup: {
-    marginBottom: '20px'
+    marginBottom: '15px'
   },
   formRow: {
     display: 'flex',
-    gap: '20px',
-    marginBottom: '20px'
+    gap: '15px',
+    marginBottom: '15px'
   },
   input: {
     width: '100%',
     padding: '10px',
     border: '1px solid #ddd',
-    borderRadius: '5px',
-    fontSize: '16px'
+    borderRadius: '4px',
+    fontSize: '16px',
+    boxSizing: 'border-box'
   },
   textarea: {
     width: '100%',
     padding: '10px',
     border: '1px solid #ddd',
-    borderRadius: '5px',
+    borderRadius: '4px',
     fontSize: '16px',
-    resize: 'vertical'
+    boxSizing: 'border-box',
+    resize: 'vertical',
+    minHeight: '80px'
   },
   submitBtn: {
     padding: '12px 30px',
     backgroundColor: '#2ecc71',
     color: 'white',
     border: 'none',
-    borderRadius: '5px',
+    borderRadius: '4px',
     fontSize: '16px',
     cursor: 'pointer',
-    width: '100%'
+    width: '100%',
+    marginTop: '10px'
   },
-  successMessage: {
-    padding: '15px',
-    backgroundColor: '#d4edda',
-    color: '#155724',
-    borderRadius: '5px',
-    marginBottom: '20px',
-    textAlign: 'center'
+  smallBtn: {
+    padding: '8px 15px',
+    backgroundColor: '#3498db',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px'
   },
-  errorMessage: {
-    padding: '15px',
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-    borderRadius: '5px',
-    marginBottom: '20px',
-    textAlign: 'center'
+  tableHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px'
   },
   tableContainer: {
-    overflowX: 'auto'
+    backgroundColor: 'white',
+    padding: '20px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
   },
   table: {
     width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '20px'
+    borderCollapse: 'collapse'
   },
   tableTh: {
     backgroundColor: '#34495e',
     color: 'white',
     padding: '12px',
-    textAlign: 'left'
+    textAlign: 'left',
+    border: '1px solid #ddd'
   },
   tableTd: {
     padding: '12px',
-    borderBottom: '1px solid #ddd'
+    borderBottom: '1px solid #ddd',
+    border: '1px solid #ddd'
   },
   roomsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-    gap: '20px',
-    marginTop: '20px'
+    gap: '20px'
   },
   roomCard: {
     padding: '15px',
     border: '1px solid #ddd',
-    borderRadius: '5px',
+    borderRadius: '8px',
     backgroundColor: '#f8f9fa'
+  },
+  noData: {
+    textAlign: 'center',
+    padding: '40px',
+    color: '#666',
+    fontSize: '16px'
   }
 };
 

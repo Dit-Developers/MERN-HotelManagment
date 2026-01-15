@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 function StaffDashboard() {
-  const [activeTab, setActiveTab] = useState('assigned');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [assignedRooms, setAssignedRooms] = useState([]);
   const [serviceRequests, setServiceRequests] = useState([]);
   const [maintenanceReports, setMaintenanceReports] = useState([]);
@@ -32,31 +32,87 @@ function StaffDashboard() {
     }
   }, [error, success]);
 
-  // Fetch data on tab change
+  // Fetch all initial data on component mount
   useEffect(() => {
     if (token) {
-      fetchData();
+      fetchAllData();
+    }
+  }, []);
+
+  // Fetch data when tab changes to non-dashboard tabs
+  useEffect(() => {
+    if (token && activeTab !== 'dashboard') {
+      fetchTabData(activeTab);
     }
   }, [activeTab]);
 
-  const fetchData = async () => {
+  // Fetch all data needed for dashboard
+  const fetchAllData = async () => {
     setLoading(true);
-    setError('');
     try {
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
-      switch(activeTab) {
+      // Fetch rooms
+      const roomsRes = await fetch(`${API_URL}/room/all-rooms`, { headers });
+      const roomsData = await roomsRes.json();
+      const rooms = Array.isArray(roomsData) ? roomsData : [];
+      
+      // Filter rooms assigned to this staff
+      const assigned = rooms.filter(room => 
+        room.roomStatus === 'cleaning' || 
+        room.roomStatus === 'dirty' ||
+        room.assignedStaff === user._id
+      );
+      setAssignedRooms(assigned);
+
+      // Fetch service requests
+      const requestsRes = await fetch(`${API_URL}/service-requests`, { headers });
+      const requestsData = await requestsRes.json();
+      const requests = Array.isArray(requestsData?.serviceRequests) ? 
+                     requestsData.serviceRequests : 
+                     Array.isArray(requestsData) ? requestsData : [];
+      
+      // Filter housekeeping requests
+      const housekeepingRequests = requests.filter(req => 
+        req.serviceType === 'housekeeping' || 
+        req.serviceType === 'room_cleaning' ||
+        (req.assignedTo === user._id || !req.assignedTo)
+      );
+      setServiceRequests(housekeepingRequests);
+
+      // Filter maintenance reports
+      const maintenance = requests.filter(req => 
+        req.serviceType === 'maintenance' ||
+        req.serviceType === 'repair'
+      );
+      setMaintenanceReports(maintenance);
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data for specific tab
+  const fetchTabData = async (tab) => {
+    setLoading(true);
+    try {
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      switch(tab) {
         case 'assigned':
-          // Fetch assigned rooms for this staff member
           const roomsRes = await fetch(`${API_URL}/room/all-rooms`, { headers });
           const roomsData = await roomsRes.json();
           const rooms = Array.isArray(roomsData) ? roomsData : [];
           
-          // Filter rooms assigned to this staff (simulating assignment by room status)
-          // In real app, you would have an assignment system
           const assigned = rooms.filter(room => 
             room.roomStatus === 'cleaning' || 
             room.roomStatus === 'dirty' ||
@@ -66,14 +122,12 @@ function StaffDashboard() {
           break;
         
         case 'requests':
-          // Fetch service requests assigned to this staff
           const requestsRes = await fetch(`${API_URL}/service-requests`, { headers });
           const requestsData = await requestsRes.json();
           const requests = Array.isArray(requestsData?.serviceRequests) ? 
                          requestsData.serviceRequests : 
                          Array.isArray(requestsData) ? requestsData : [];
           
-          // Filter housekeeping requests for this staff
           const housekeepingRequests = requests.filter(req => 
             req.serviceType === 'housekeeping' || 
             req.serviceType === 'room_cleaning' ||
@@ -83,8 +137,6 @@ function StaffDashboard() {
           break;
         
         case 'maintenance':
-          // Fetch maintenance reports (could be from a different endpoint)
-          // For now, using same service requests endpoint with maintenance filter
           const maintenanceRes = await fetch(`${API_URL}/service-requests`, { headers });
           const maintenanceData = await maintenanceRes.json();
           const allRequests = Array.isArray(maintenanceData?.serviceRequests) ? 
@@ -104,6 +156,11 @@ function StaffDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Refresh all data
+  const refreshData = () => {
+    fetchAllData();
   };
 
   // Generic API call function
@@ -127,7 +184,7 @@ function StaffDashboard() {
       }
 
       setSuccess(result.message || 'Operation successful');
-      fetchData();
+      refreshData(); // Refresh all data after successful operation
       return result;
     } catch (error) {
       setError(error.message);
@@ -184,6 +241,30 @@ function StaffDashboard() {
     });
   };
 
+  // Calculate statistics for dashboard
+  const calculateDashboardStats = () => {
+    const roomsToClean = assignedRooms.filter(room => 
+      room.roomStatus === 'cleaning' || room.roomStatus === 'dirty'
+    ).length;
+    
+    const pendingRequests = serviceRequests.filter(req => 
+      req.status === 'pending'
+    ).length;
+    
+    const todaysProgress = serviceRequests.filter(req => 
+      req.status === 'completed' && 
+      req.completedAt &&
+      new Date(req.completedAt).toDateString() === new Date().toDateString()
+    ).length;
+
+    return {
+      assignedRooms: assignedRooms.length,
+      pendingRequests,
+      roomsToClean,
+      todaysProgress
+    };
+  };
+
   // Logout
   const handleLogout = () => {
     localStorage.clear();
@@ -192,10 +273,12 @@ function StaffDashboard() {
 
   // Render content based on active tab
   const renderContent = () => {
-    if (loading) return <div style={styles.loading}>Loading...</div>;
+    if (loading && activeTab === 'dashboard') return <div style={styles.loading}>Loading dashboard...</div>;
 
     switch(activeTab) {
       case 'dashboard':
+        const stats = calculateDashboardStats();
+        
         return (
           <div style={styles.dashboard}>
             <h3>Housekeeping Dashboard</h3>
@@ -204,31 +287,19 @@ function StaffDashboard() {
             <div style={styles.stats}>
               <div style={styles.statCard}>
                 <h4>Rooms Assigned</h4>
-                <p>{assignedRooms.length}</p>
+                <p>{stats.assignedRooms}</p>
               </div>
               <div style={styles.statCard}>
                 <h4>Pending Requests</h4>
-                <p>
-                  {serviceRequests.filter(req => req.status === 'pending').length}
-                </p>
+                <p>{stats.pendingRequests}</p>
               </div>
               <div style={styles.statCard}>
                 <h4>Rooms to Clean</h4>
-                <p>
-                  {assignedRooms.filter(room => 
-                    room.roomStatus === 'cleaning' || room.roomStatus === 'dirty'
-                  ).length}
-                </p>
+                <p>{stats.roomsToClean}</p>
               </div>
               <div style={styles.statCard}>
                 <h4>Today's Progress</h4>
-                <p>
-                  {serviceRequests.filter(req => 
-                    req.status === 'completed' && 
-                    req.completedAt &&
-                    new Date(req.completedAt).toDateString() === new Date().toDateString()
-                  ).length}
-                </p>
+                <p>{stats.todaysProgress}</p>
               </div>
             </div>
 
@@ -253,6 +324,12 @@ function StaffDashboard() {
                 >
                   🔧 Report Maintenance
                 </button>
+                <button 
+                  style={styles.actionBtn}
+                  onClick={refreshData}
+                >
+                  🔄 Refresh Data
+                </button>
               </div>
             </div>
           </div>
@@ -265,8 +342,13 @@ function StaffDashboard() {
             <p style={styles.subtitle}>Rooms assigned to you for cleaning and maintenance</p>
             
             <div style={styles.listContainer}>
-              <h4>Your Rooms ({assignedRooms.length})</h4>
-              {assignedRooms.length === 0 ? (
+              <div style={styles.headerRow}>
+                <h4>Your Rooms ({assignedRooms.length})</h4>
+                <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+              </div>
+              {loading ? (
+                <div style={styles.loading}>Loading rooms...</div>
+              ) : assignedRooms.length === 0 ? (
                 <div style={styles.noData}>No rooms assigned</div>
               ) : (
                 assignedRooms.map(room => (
@@ -336,8 +418,13 @@ function StaffDashboard() {
             <p style={styles.subtitle}>Housekeeping and cleaning requests assigned to you</p>
             
             <div style={styles.listContainer}>
-              <h4>Your Requests ({serviceRequests.length})</h4>
-              {serviceRequests.length === 0 ? (
+              <div style={styles.headerRow}>
+                <h4>Your Requests ({serviceRequests.length})</h4>
+                <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+              </div>
+              {loading ? (
+                <div style={styles.loading}>Loading requests...</div>
+              ) : serviceRequests.length === 0 ? (
                 <div style={styles.noData}>No service requests</div>
               ) : (
                 serviceRequests.map(req => (
@@ -446,8 +533,13 @@ function StaffDashboard() {
             </form>
 
             <div style={styles.listContainer}>
-              <h4>Maintenance History ({maintenanceReports.length})</h4>
-              {maintenanceReports.length === 0 ? (
+              <div style={styles.headerRow}>
+                <h4>Maintenance History ({maintenanceReports.length})</h4>
+                <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+              </div>
+              {loading ? (
+                <div style={styles.loading}>Loading maintenance reports...</div>
+              ) : maintenanceReports.length === 0 ? (
                 <div style={styles.noData}>No maintenance reports</div>
               ) : (
                 maintenanceReports.map(report => (
@@ -704,18 +796,33 @@ const styles = {
     marginTop: '15px'
   },
   actionBtn: {
-    padding: '20px',
+    padding: '15px',
     backgroundColor: '#3498db',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
-    fontSize: '16px',
+    fontSize: '14px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '10px',
     transition: 'transform 0.2s'
+  },
+  headerRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '15px'
+  },
+  refreshBtn: {
+    padding: '8px 15px',
+    backgroundColor: '#3498db',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px'
   },
   listContainer: {
     backgroundColor: 'white',

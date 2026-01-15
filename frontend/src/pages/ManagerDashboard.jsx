@@ -29,28 +29,83 @@ function ManagerDashboard() {
     }
   }, [error, success]);
 
-  // Fetch data on tab change
+  // Fetch all data on component mount
   useEffect(() => {
     if (token) {
-      fetchData();
+      fetchAllData();
+    }
+  }, []);
+
+  // Fetch specific data on tab change
+  useEffect(() => {
+    if (token && activeTab !== 'dashboard') {
+      fetchTabData(activeTab);
     }
   }, [activeTab]);
 
-  const fetchData = async () => {
+  // Fetch all data for dashboard
+  const fetchAllData = async () => {
     setLoading(true);
-    setError('');
     try {
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
-      switch(activeTab) {
+      // Fetch bookings
+      const bookingsRes = await fetch(`${API_URL}/booking/all-bookings`, { headers });
+      const bookingsData = await bookingsRes.json();
+      setBookings(Array.isArray(bookingsData?.allBookings) ? bookingsData.allBookings : 
+                  Array.isArray(bookingsData) ? bookingsData : []);
+      
+      // Fetch revenue data (payments)
+      const revenueRes = await fetch(`${API_URL}/payment/get-all-payments`, { headers });
+      const revenueData = await revenueRes.json();
+      setRevenueData(Array.isArray(revenueData?.allPayments) ? revenueData.allPayments : 
+                     Array.isArray(revenueData) ? revenueData : []);
+      
+      // Fetch service requests for housekeeping
+      const housekeepingRes = await fetch(`${API_URL}/service-requests`, { headers });
+      const housekeepingData = await housekeepingRes.json();
+      const requests = Array.isArray(housekeepingData?.serviceRequests) ? 
+                      housekeepingData.serviceRequests : 
+                      Array.isArray(housekeepingData) ? housekeepingData : [];
+      const housekeepingRequests = requests.filter(req => 
+        req.serviceType === 'housekeeping' || 
+        req.serviceType === 'room_cleaning' ||
+        (req.serviceType && req.serviceType.toLowerCase().includes('clean'))
+      );
+      setHousekeeping(housekeepingRequests);
+      
+      // Fetch feedbacks (reviews)
+      const feedbackRes = await fetch(`${API_URL}/reviews/get-all-reviews`, { headers });
+      const feedbackData = await feedbackRes.json();
+      setFeedbacks(Array.isArray(feedbackData?.getReviews) ? feedbackData.getReviews : 
+                   Array.isArray(feedbackData) ? feedbackData : []);
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data for specific tab
+  const fetchTabData = async (tab) => {
+    setLoading(true);
+    try {
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      switch(tab) {
         case 'bookings':
           const bookingsRes = await fetch(`${API_URL}/booking/all-bookings`, { headers });
           const bookingsData = await bookingsRes.json();
           setBookings(Array.isArray(bookingsData?.allBookings) ? bookingsData.allBookings : 
-                    Array.isArray(bookingsData) ? bookingsData : []);
+                     Array.isArray(bookingsData) ? bookingsData : []);
           break;
         
         case 'revenue':
@@ -66,11 +121,10 @@ function ManagerDashboard() {
           const requests = Array.isArray(housekeepingData?.serviceRequests) ? 
                           housekeepingData.serviceRequests : 
                           Array.isArray(housekeepingData) ? housekeepingData : [];
-          // Filter only housekeeping related requests
           const housekeepingRequests = requests.filter(req => 
             req.serviceType === 'housekeeping' || 
             req.serviceType === 'room_cleaning' ||
-            req.serviceType?.toLowerCase().includes('clean')
+            (req.serviceType && req.serviceType.toLowerCase().includes('clean'))
           );
           setHousekeeping(housekeepingRequests);
           break;
@@ -88,6 +142,11 @@ function ManagerDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Refresh all data
+  const refreshData = () => {
+    fetchAllData();
   };
 
   // Generic API call function
@@ -111,7 +170,7 @@ function ManagerDashboard() {
       }
 
       setSuccess(result.message || 'Operation successful');
-      fetchData();
+      fetchAllData(); // Refresh all data after successful operation
       return result;
     } catch (error) {
       setError(error.message);
@@ -129,14 +188,15 @@ function ManagerDashboard() {
     await apiCall('PUT', `/service-requests/${id}/status`, { status });
   };
 
-  // Filter revenue by date - FIXED VERSION
+  // Filter revenue by date
   const filterRevenueByDate = () => {
-    if (!Array.isArray(revenueData) || revenueData.length === 0) {
+    const revenueArray = Array.isArray(revenueData) ? revenueData : [];
+    if (revenueArray.length === 0) {
       return [];
     }
     
     const now = new Date();
-    let filtered = revenueData;
+    let filtered = revenueArray;
     
     if (dateFilter === 'today') {
       const today = new Date().toISOString().split('T')[0];
@@ -167,32 +227,52 @@ function ManagerDashboard() {
 
   // Filter bookings by status
   const filterBookingsByStatus = () => {
-    if (!Array.isArray(bookings) || bookings.length === 0) return [];
-    if (statusFilter === 'all') return bookings;
-    return bookings.filter(booking => booking.bookingStatus === statusFilter);
+    const bookingsArray = Array.isArray(bookings) ? bookings : [];
+    if (bookingsArray.length === 0) return [];
+    if (statusFilter === 'all') return bookingsArray;
+    return bookingsArray.filter(booking => booking.bookingStatus === statusFilter);
   };
 
-  // Calculate revenue totals - FIXED VERSION
+  // Calculate revenue totals
   const calculateRevenue = () => {
     const filteredRevenue = filterRevenueByDate();
+    const revenueArray = Array.isArray(filteredRevenue) ? filteredRevenue : [];
     
-    if (!Array.isArray(filteredRevenue) || filteredRevenue.length === 0) {
+    if (revenueArray.length === 0) {
       return { total: 0, completed: 0, pending: 0, totalTransactions: 0 };
     }
     
-    const total = filteredRevenue.reduce((sum, payment) => {
+    const total = revenueArray.reduce((sum, payment) => {
       const amount = parseFloat(payment.amount) || 0;
       return sum + amount;
     }, 0);
     
-    const completed = filteredRevenue.filter(p => p.status === 'completed').length;
-    const pending = filteredRevenue.filter(p => p.status === 'pending').length;
+    const completed = revenueArray.filter(p => p.status === 'completed').length;
+    const pending = revenueArray.filter(p => p.status === 'pending').length;
     
     return { 
       total: total.toFixed(2), 
       completed, 
       pending, 
-      totalTransactions: filteredRevenue.length 
+      totalTransactions: revenueArray.length 
+    };
+  };
+
+  // Calculate dashboard statistics
+  const calculateDashboardStats = () => {
+    const bookingsArray = Array.isArray(bookings) ? bookings : [];
+    const housekeepingArray = Array.isArray(housekeeping) ? housekeeping : [];
+    const revenueStats = calculateRevenue();
+    
+    const activeBookings = bookingsArray.filter(b => b.bookingStatus === 'checked-in').length;
+    const pendingRequests = housekeepingArray.filter(h => h.status === 'pending').length;
+    const totalBookings = bookingsArray.length;
+    
+    return {
+      totalBookings,
+      activeBookings,
+      totalRevenue: revenueStats.total,
+      pendingRequests
     };
   };
 
@@ -204,36 +284,30 @@ function ManagerDashboard() {
 
   // Render content based on active tab
   const renderContent = () => {
-    if (loading) return <div style={styles.loading}>Loading...</div>;
+    if (loading && activeTab === 'dashboard') return <div style={styles.loading}>Loading dashboard...</div>;
 
     switch(activeTab) {
       case 'dashboard':
-        const revenueStats = calculateRevenue();
+        const dashboardStats = calculateDashboardStats(); // Changed variable name
         return (
           <div style={styles.dashboard}>
             <h3>Manager Dashboard Overview</h3>
             <div style={styles.stats}>
               <div style={styles.statCard}>
                 <h4>Total Bookings</h4>
-                <p>{Array.isArray(bookings) ? bookings.length : 0}</p>
+                <p>{dashboardStats.totalBookings}</p>
               </div>
               <div style={styles.statCard}>
                 <h4>Active Bookings</h4>
-                <p>
-                  {Array.isArray(bookings) ? 
-                    bookings.filter(b => b.bookingStatus === 'checked-in').length : 0}
-                </p>
+                <p>{dashboardStats.activeBookings}</p>
               </div>
               <div style={styles.statCard}>
                 <h4>Total Revenue</h4>
-                <p>${revenueStats.total}</p>
+                <p>${dashboardStats.totalRevenue}</p>
               </div>
               <div style={styles.statCard}>
                 <h4>Pending Requests</h4>
-                <p>
-                  {Array.isArray(housekeeping) ? 
-                    housekeeping.filter(h => h.status === 'pending').length : 0}
-                </p>
+                <p>{dashboardStats.pendingRequests}</p>
               </div>
             </div>
 
@@ -252,6 +326,31 @@ function ManagerDashboard() {
                 <button style={styles.actionBtn} onClick={() => setActiveTab('feedback')}>
                   ⭐ View Feedback
                 </button>
+                <button style={styles.actionBtn} onClick={refreshData}>
+                  🔄 Refresh Data
+                </button>
+              </div>
+            </div>
+
+            <div style={styles.recentActivity}>
+              <h4>Recent Activity</h4>
+              <div style={styles.activityList}>
+                <div style={styles.activityItem}>
+                  <strong>Latest Bookings</strong>
+                  <p>
+                    {(Array.isArray(bookings) && bookings.length > 0) ? 
+                      bookings.slice(0, 3).map(b => `#${b._id?.slice(-6)}`).join(', ') : 
+                      'No recent bookings'}
+                  </p>
+                </div>
+                <div style={styles.activityItem}>
+                  <strong>Recent Revenue</strong>
+                  <p>
+                    {(Array.isArray(revenueData) && revenueData.length > 0) ? 
+                      `$${revenueData.slice(0, 3).reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0).toFixed(2)} total` : 
+                      'No recent payments'}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -263,23 +362,27 @@ function ManagerDashboard() {
           <div>
             <div style={styles.headerRow}>
               <h3>Manage Bookings</h3>
-              <select 
-                style={styles.filterSelect} 
-                value={statusFilter} 
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="checked-in">Checked-in</option>
-                <option value="checked-out">Checked-out</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+              <div style={styles.filterSection}>
+                <select 
+                  style={styles.filterSelect} 
+                  value={statusFilter} 
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="checked-in">Checked-in</option>
+                  <option value="checked-out">Checked-out</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+              </div>
             </div>
 
             <div style={styles.listContainer}>
               <h4>All Bookings ({filteredBookings.length})</h4>
-              {!Array.isArray(filteredBookings) || filteredBookings.length === 0 ? (
+              {loading ? <div style={styles.loading}>Loading bookings...</div> : 
+               filteredBookings.length === 0 ? (
                 <div style={styles.noData}>No bookings found</div>
               ) : (
                 filteredBookings.map(b => (
@@ -327,45 +430,49 @@ function ManagerDashboard() {
 
       case 'revenue':
         const filteredRevenue = filterRevenueByDate();
-        const stats = calculateRevenue();
+        const revenueStats = calculateRevenue(); // Changed variable name
         return (
           <div>
             <div style={styles.headerRow}>
               <h3>Revenue Reports</h3>
-              <select 
-                style={styles.filterSelect} 
-                value={dateFilter} 
-                onChange={(e) => setDateFilter(e.target.value)}
-              >
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="all">All Time</option>
-              </select>
+              <div style={styles.filterSection}>
+                <select 
+                  style={styles.filterSelect} 
+                  value={dateFilter} 
+                  onChange={(e) => setDateFilter(e.target.value)}
+                >
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="all">All Time</option>
+                </select>
+                <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+              </div>
             </div>
 
             <div style={styles.revenueStats}>
               <div style={styles.revenueCard}>
                 <h4>Total Revenue</h4>
-                <p style={styles.revenueAmount}>${stats.total}</p>
+                <p style={styles.revenueAmount}>${revenueStats.total}</p>
               </div>
               <div style={styles.revenueCard}>
                 <h4>Completed Transactions</h4>
-                <p>{stats.completed}</p>
+                <p>{revenueStats.completed}</p>
               </div>
               <div style={styles.revenueCard}>
                 <h4>Pending Transactions</h4>
-                <p>{stats.pending}</p>
+                <p>{revenueStats.pending}</p>
               </div>
               <div style={styles.revenueCard}>
                 <h4>Total Transactions</h4>
-                <p>{stats.totalTransactions}</p>
+                <p>{revenueStats.totalTransactions}</p>
               </div>
             </div>
 
             <div style={styles.listContainer}>
               <h4>Payment Details ({filteredRevenue.length})</h4>
-              {!Array.isArray(filteredRevenue) || filteredRevenue.length === 0 ? (
+              {loading ? <div style={styles.loading}>Loading payments...</div> : 
+               filteredRevenue.length === 0 ? (
                 <div style={styles.noData}>No payment records found</div>
               ) : (
                 <div>
@@ -402,11 +509,15 @@ function ManagerDashboard() {
       case 'housekeeping':
         return (
           <div>
-            <h3>Housekeeping Monitor</h3>
+            <div style={styles.headerRow}>
+              <h3>Housekeeping Monitor</h3>
+              <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+            </div>
 
             <div style={styles.listContainer}>
               <h4>Cleaning Requests ({Array.isArray(housekeeping) ? housekeeping.length : 0})</h4>
-              {!Array.isArray(housekeeping) || housekeeping.length === 0 ? (
+              {loading ? <div style={styles.loading}>Loading housekeeping requests...</div> : 
+               !Array.isArray(housekeeping) || housekeeping.length === 0 ? (
                 <div style={styles.noData}>No housekeeping requests found</div>
               ) : (
                 housekeeping.map(h => (
@@ -454,11 +565,15 @@ function ManagerDashboard() {
       case 'feedback':
         return (
           <div>
-            <h3>Customer Feedback</h3>
+            <div style={styles.headerRow}>
+              <h3>Customer Feedback</h3>
+              <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+            </div>
 
             <div style={styles.listContainer}>
               <h4>All Reviews ({Array.isArray(feedbacks) ? feedbacks.length : 0})</h4>
-              {!Array.isArray(feedbacks) || feedbacks.length === 0 ? (
+              {loading ? <div style={styles.loading}>Loading feedback...</div> : 
+               !Array.isArray(feedbacks) || feedbacks.length === 0 ? (
                 <div style={styles.noData}>No reviews found</div>
               ) : (
                 feedbacks.map(r => (
@@ -689,16 +804,50 @@ const styles = {
     justifyContent: 'center',
     gap: '10px'
   },
+  recentActivity: {
+    marginTop: '30px',
+    padding: '20px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '8px'
+  },
+  activityList: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '20px',
+    marginTop: '10px'
+  },
+  activityItem: {
+    padding: '15px',
+    backgroundColor: 'white',
+    borderRadius: '6px',
+    border: '1px solid #dee2e6'
+  },
   headerRow: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '20px'
+    marginBottom: '20px',
+    flexWrap: 'wrap',
+    gap: '15px'
+  },
+  filterSection: {
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'center'
   },
   filterSelect: {
     padding: '8px 15px',
     border: '1px solid #ddd',
     borderRadius: '4px',
+    fontSize: '14px'
+  },
+  refreshBtn: {
+    padding: '8px 15px',
+    backgroundColor: '#3498db',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
     fontSize: '14px'
   },
   listContainer: {
@@ -723,13 +872,16 @@ const styles = {
   itemContent: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '15px'
   },
   statusSection: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '10px'
+    gap: '10px',
+    minWidth: '150px'
   },
   statusBadge: {
     padding: '5px 10px',
@@ -742,7 +894,8 @@ const styles = {
     padding: '5px 10px',
     border: '1px solid #ddd',
     borderRadius: '4px',
-    fontSize: '14px'
+    fontSize: '14px',
+    minWidth: '120px'
   },
   revenueStats: {
     display: 'grid',
@@ -791,7 +944,9 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '10px'
+    marginBottom: '10px',
+    flexWrap: 'wrap',
+    gap: '10px'
   },
   feedbackText: {
     fontSize: '16px',
@@ -804,7 +959,9 @@ const styles = {
     alignItems: 'center',
     marginTop: '15px',
     fontSize: '14px',
-    color: '#666'
+    color: '#666',
+    flexWrap: 'wrap',
+    gap: '10px'
   },
   date: {
     fontSize: '14px',

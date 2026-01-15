@@ -86,27 +86,87 @@ function AdminDashboard() {
     }
   }, [error, success]);
 
-  // Fetch data on tab change
+  // Fetch all data on component mount
   useEffect(() => {
     if (token) {
-      fetchData();
+      fetchAllData();
+    }
+  }, []);
+
+  // Fetch specific data on tab change
+  useEffect(() => {
+    if (token && activeTab !== 'dashboard') {
+      fetchTabData(activeTab);
     }
   }, [activeTab]);
 
-  const fetchData = async () => {
+  // Fetch all data for dashboard
+  const fetchAllData = async () => {
     setLoading(true);
-    setError('');
     try {
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
-      switch(activeTab) {
+      // Fetch users
+      const usersRes = await fetch(`${API_URL}/get-all-users`, { headers });
+      const usersData = await usersRes.json();
+      setUsers(Array.isArray(usersData?.allUsers) ? usersData.allUsers : 
+              Array.isArray(usersData) ? usersData : []);
+      
+      // Fetch rooms
+      const roomsRes = await fetch(`${API_URL}/room/all-rooms`, { headers });
+      const roomsData = await roomsRes.json();
+      setRooms(Array.isArray(roomsData) ? roomsData : []);
+      
+      // Fetch bookings
+      const bookingsRes = await fetch(`${API_URL}/booking/all-bookings`, { headers });
+      const bookingsData = await bookingsRes.json();
+      setBookings(Array.isArray(bookingsData?.allBookings) ? bookingsData.allBookings :
+                 Array.isArray(bookingsData) ? bookingsData : []);
+      
+      // Fetch payments
+      const paymentsRes = await fetch(`${API_URL}/payment/get-all-payments`, { headers });
+      const paymentsData = await paymentsRes.json();
+      setPayments(Array.isArray(paymentsData?.allPayments) ? paymentsData.allPayments :
+                 Array.isArray(paymentsData) ? paymentsData : []);
+      
+      // Fetch reviews
+      const reviewsRes = await fetch(`${API_URL}/reviews/get-all-reviews`, { headers });
+      const reviewsData = await reviewsRes.json();
+      setReviews(Array.isArray(reviewsData?.getReviews) ? reviewsData.getReviews :
+                Array.isArray(reviewsData) ? reviewsData : []);
+      
+      // Fetch service requests
+      const servicesRes = await fetch(`${API_URL}/service-requests`, { headers });
+      const servicesData = await servicesRes.json();
+      setServiceRequests(Array.isArray(servicesData?.serviceRequests) ? servicesData.serviceRequests :
+                        Array.isArray(servicesData) ? servicesData : []);
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data for specific tab
+  const fetchTabData = async (tab) => {
+    setLoading(true);
+    try {
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      switch(tab) {
         case 'users':
           const usersRes = await fetch(`${API_URL}/get-all-users`, { headers });
           const usersData = await usersRes.json();
-          setUsers(usersData.allUsers || usersData || []);
+          setUsers(Array.isArray(usersData?.allUsers) ? usersData.allUsers : 
+                  Array.isArray(usersData) ? usersData : []);
           break;
         
         case 'rooms':
@@ -118,25 +178,29 @@ function AdminDashboard() {
         case 'bookings':
           const bookingsRes = await fetch(`${API_URL}/booking/all-bookings`, { headers });
           const bookingsData = await bookingsRes.json();
-          setBookings(bookingsData.allBookings || bookingsData || []);
+          setBookings(Array.isArray(bookingsData?.allBookings) ? bookingsData.allBookings :
+                     Array.isArray(bookingsData) ? bookingsData : []);
           break;
         
         case 'payments':
           const paymentsRes = await fetch(`${API_URL}/payment/get-all-payments`, { headers });
           const paymentsData = await paymentsRes.json();
-          setPayments(paymentsData.allPayments || paymentsData || []);
+          setPayments(Array.isArray(paymentsData?.allPayments) ? paymentsData.allPayments :
+                     Array.isArray(paymentsData) ? paymentsData : []);
           break;
         
         case 'reviews':
           const reviewsRes = await fetch(`${API_URL}/reviews/get-all-reviews`, { headers });
           const reviewsData = await reviewsRes.json();
-          setReviews(reviewsData.getReviews || reviewsData || []);
+          setReviews(Array.isArray(reviewsData?.getReviews) ? reviewsData.getReviews :
+                    Array.isArray(reviewsData) ? reviewsData : []);
           break;
         
         case 'services':
           const servicesRes = await fetch(`${API_URL}/service-requests`, { headers });
           const servicesData = await servicesRes.json();
-          setServiceRequests(servicesData.serviceRequests || servicesData || []);
+          setServiceRequests(Array.isArray(servicesData?.serviceRequests) ? servicesData.serviceRequests :
+                           Array.isArray(servicesData) ? servicesData : []);
           break;
       }
     } catch (error) {
@@ -145,6 +209,11 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Refresh all data
+  const refreshData = () => {
+    fetchAllData();
   };
 
   // Generic API call function
@@ -168,12 +237,52 @@ function AdminDashboard() {
       }
 
       setSuccess(result.message || 'Operation successful');
-      fetchData();
+      refreshData(); // Refresh all data after successful operation
       return result;
     } catch (error) {
       setError(error.message);
       throw error;
     }
+  };
+
+  // Calculate dashboard statistics - SAFE VERSION
+  const calculateDashboardStats = () => {
+    // Ensure all variables are arrays
+    const paymentsArray = Array.isArray(payments) ? payments : [];
+    const bookingsArray = Array.isArray(bookings) ? bookings : [];
+    const roomsArray = Array.isArray(rooms) ? rooms : [];
+    const serviceRequestsArray = Array.isArray(serviceRequests) ? serviceRequests : [];
+    const usersArray = Array.isArray(users) ? users : [];
+    const reviewsArray = Array.isArray(reviews) ? reviews : [];
+
+    const totalRevenue = paymentsArray.reduce((sum, p) => {
+      const amount = parseFloat(p.amount) || 0;
+      return sum + amount;
+    }, 0);
+    
+    const activeBookings = bookingsArray.filter(b => 
+      b.bookingStatus === 'confirmed' || 
+      b.bookingStatus === 'checked-in' || 
+      b.bookingStatus === 'pending'
+    ).length;
+    
+    const pendingPayments = paymentsArray.filter(p => p.status === 'pending').length;
+    const pendingServiceRequests = serviceRequestsArray.filter(sr => sr.status === 'pending').length;
+    
+    const availableRooms = roomsArray.filter(r => 
+      r.roomStatus === 'available' && r.isAvailable === true
+    ).length;
+
+    return {
+      totalUsers: usersArray.length,
+      totalRooms: roomsArray.length,
+      activeBookings,
+      totalRevenue,
+      pendingPayments,
+      pendingServiceRequests,
+      availableRooms,
+      totalReviews: reviewsArray.length
+    };
   };
 
   // CRUD for Users
@@ -268,29 +377,72 @@ function AdminDashboard() {
 
   // Render content based on active tab
   const renderContent = () => {
-    if (loading) return <div style={styles.loading}>Loading...</div>;
+    if (loading && activeTab === 'dashboard') return <div style={styles.loading}>Loading dashboard...</div>;
 
     switch(activeTab) {
       case 'dashboard':
+        const stats = calculateDashboardStats();
+        
         return (
           <div style={styles.dashboard}>
-            <h3>Hotel Dashboard</h3>
+            <h3>Hotel Admin Dashboard</h3>
+            <p>Welcome back, <strong>{user.fullName}</strong>!</p>
+            
             <div style={styles.stats}>
               <div style={styles.statCard}>
                 <h4>Total Users</h4>
-                <p>{users.length}</p>
+                <p>{stats.totalUsers}</p>
               </div>
               <div style={styles.statCard}>
                 <h4>Total Rooms</h4>
-                <p>{rooms.length}</p>
+                <p>{stats.totalRooms}</p>
+                <small>Available: {stats.availableRooms}</small>
               </div>
               <div style={styles.statCard}>
                 <h4>Active Bookings</h4>
-                <p>{bookings.length}</p>
+                <p>{stats.activeBookings}</p>
+                <small>Total: {bookings.length || 0}</small>
               </div>
               <div style={styles.statCard}>
                 <h4>Total Revenue</h4>
-                <p>${payments.reduce((sum, p) => sum + (p.amount || 0), 0)}</p>
+                <p>${stats.totalRevenue.toFixed(2)}</p>
+              </div>
+            </div>
+
+            <div style={styles.stats}>
+              <div style={styles.statCard}>
+                <h4>Pending Payments</h4>
+                <p>{stats.pendingPayments}</p>
+              </div>
+              <div style={styles.statCard}>
+                <h4>Service Requests</h4>
+                <p>{stats.pendingServiceRequests} pending</p>
+                <small>Total: {serviceRequests.length || 0}</small>
+              </div>
+              <div style={styles.statCard}>
+                <h4>Reviews</h4>
+                <p>{stats.totalReviews}</p>
+              </div>
+              <div style={styles.statCard}>
+                <h4>Quick Actions</h4>
+                <div style={styles.quickActions}>
+                  <button onClick={refreshData} style={styles.actionBtn}>🔄 Refresh Data</button>
+                  <button onClick={() => setActiveTab('rooms')} style={styles.actionBtn}>🏨 Manage Rooms</button>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.recentActivity}>
+              <h4>Recent Activity</h4>
+              <div style={styles.activityList}>
+                <div style={styles.activityItem}>
+                  <strong>Latest Bookings</strong>
+                  <p>{(Array.isArray(bookings) ? bookings.slice(0, 3).map(b => `#${b._id?.slice(-6)}`).join(', ') : 'No recent bookings') || 'No recent bookings'}</p>
+                </div>
+                <div style={styles.activityItem}>
+                  <strong>Recent Payments</strong>
+                  <p>{(Array.isArray(payments) ? payments.slice(0, 3).map(p => `$${p.amount}`).join(', ') : 'No recent payments') || 'No recent payments'}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -300,6 +452,7 @@ function AdminDashboard() {
         return (
           <div>
             <h3>Manage Users</h3>
+            <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
             
             {editingUser ? (
               <form onSubmit={updateUser} style={styles.form}>
@@ -345,8 +498,11 @@ function AdminDashboard() {
             )}
 
             <div style={styles.listContainer}>
-              <h4>All Users ({users.length})</h4>
-              {users.length === 0 ? <div style={styles.noData}>No users found</div> : users.map(u => (
+              <h4>All Users ({Array.isArray(users) ? users.length : 0})</h4>
+              {loading ? <div style={styles.loading}>Loading users...</div> : 
+               !Array.isArray(users) || users.length === 0 ? 
+               <div style={styles.noData}>No users found</div> : 
+               users.map(u => (
                 <div key={u._id} style={styles.itemCard}>
                   <div>
                     <strong>{u.fullName}</strong>
@@ -373,6 +529,7 @@ function AdminDashboard() {
         return (
           <div>
             <h3>Manage Rooms</h3>
+            <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
             
             {editingRoom ? (
               <form onSubmit={updateRoom} style={styles.form}>
@@ -408,8 +565,11 @@ function AdminDashboard() {
             )}
 
             <div style={styles.listContainer}>
-              <h4>All Rooms ({rooms.length})</h4>
-              {rooms.length === 0 ? <div style={styles.noData}>No rooms found</div> : rooms.map(r => (
+              <h4>All Rooms ({Array.isArray(rooms) ? rooms.length : 0})</h4>
+              {loading ? <div style={styles.loading}>Loading rooms...</div> : 
+               !Array.isArray(rooms) || rooms.length === 0 ? 
+               <div style={styles.noData}>No rooms found</div> : 
+               rooms.map(r => (
                 <div key={r._id} style={styles.itemCard}>
                   <div>
                     <strong>Room {r.roomNumber}</strong>
@@ -437,6 +597,7 @@ function AdminDashboard() {
         return (
           <div>
             <h3>Manage Bookings</h3>
+            <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
             
             <form onSubmit={createBooking} style={styles.form}>
               <h4>Create New Booking</h4>
@@ -455,8 +616,11 @@ function AdminDashboard() {
             </form>
 
             <div style={styles.listContainer}>
-              <h4>All Bookings ({bookings.length})</h4>
-              {bookings.length === 0 ? <div style={styles.noData}>No bookings found</div> : bookings.map(b => (
+              <h4>All Bookings ({Array.isArray(bookings) ? bookings.length : 0})</h4>
+              {loading ? <div style={styles.loading}>Loading bookings...</div> : 
+               !Array.isArray(bookings) || bookings.length === 0 ? 
+               <div style={styles.noData}>No bookings found</div> : 
+               bookings.map(b => (
                 <div key={b._id} style={styles.itemCard}>
                   <div>
                     <strong>Booking #{b._id?.slice(-6)}</strong>
@@ -485,6 +649,7 @@ function AdminDashboard() {
         return (
           <div>
             <h3>Manage Payments</h3>
+            <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
             
             <form onSubmit={createPayment} style={styles.form}>
               <h4>Create New Payment</h4>
@@ -510,8 +675,11 @@ function AdminDashboard() {
             </form>
 
             <div style={styles.listContainer}>
-              <h4>All Payments ({payments.length})</h4>
-              {payments.length === 0 ? <div style={styles.noData}>No payments found</div> : payments.map(p => (
+              <h4>All Payments ({Array.isArray(payments) ? payments.length : 0})</h4>
+              {loading ? <div style={styles.loading}>Loading payments...</div> : 
+               !Array.isArray(payments) || payments.length === 0 ? 
+               <div style={styles.noData}>No payments found</div> : 
+               payments.map(p => (
                 <div key={p._id} style={styles.itemCard}>
                   <div>
                     <strong>Payment #{p._id?.slice(-6)}</strong>
@@ -540,6 +708,7 @@ function AdminDashboard() {
         return (
           <div>
             <h3>Manage Reviews</h3>
+            <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
             
             <form onSubmit={createReview} style={styles.form}>
               <h4>Create New Review</h4>
@@ -549,8 +718,11 @@ function AdminDashboard() {
             </form>
 
             <div style={styles.listContainer}>
-              <h4>All Reviews ({reviews.length})</h4>
-              {reviews.length === 0 ? <div style={styles.noData}>No reviews found</div> : reviews.map(r => (
+              <h4>All Reviews ({Array.isArray(reviews) ? reviews.length : 0})</h4>
+              {loading ? <div style={styles.loading}>Loading reviews...</div> : 
+               !Array.isArray(reviews) || reviews.length === 0 ? 
+               <div style={styles.noData}>No reviews found</div> : 
+               reviews.map(r => (
                 <div key={r._id} style={styles.itemCard}>
                   <div>
                     <strong>Review #{r._id?.slice(-6)}</strong>
@@ -571,6 +743,7 @@ function AdminDashboard() {
         return (
           <div>
             <h3>Manage Service Requests</h3>
+            <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
             
             <form onSubmit={createServiceRequest} style={styles.form}>
               <h4>Create New Service Request</h4>
@@ -595,8 +768,11 @@ function AdminDashboard() {
             </form>
 
             <div style={styles.listContainer}>
-              <h4>All Service Requests ({serviceRequests.length})</h4>
-              {serviceRequests.length === 0 ? <div style={styles.noData}>No service requests found</div> : serviceRequests.map(sr => (
+              <h4>All Service Requests ({Array.isArray(serviceRequests) ? serviceRequests.length : 0})</h4>
+              {loading ? <div style={styles.loading}>Loading service requests...</div> : 
+               !Array.isArray(serviceRequests) || serviceRequests.length === 0 ? 
+               <div style={styles.noData}>No service requests found</div> : 
+               serviceRequests.map(sr => (
                 <div key={sr._id} style={styles.itemCard}>
                   <div>
                     <strong>{sr.serviceType}</strong>
@@ -773,6 +949,49 @@ const styles = {
     borderRadius: '8px',
     textAlign: 'center',
     border: '1px solid #dee2e6'
+  },
+  quickActions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    marginTop: '10px'
+  },
+  actionBtn: {
+    padding: '8px 12px',
+    backgroundColor: '#3498db',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px'
+  },
+  recentActivity: {
+    marginTop: '30px',
+    padding: '20px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '8px'
+  },
+  activityList: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '20px',
+    marginTop: '10px'
+  },
+  activityItem: {
+    padding: '15px',
+    backgroundColor: 'white',
+    borderRadius: '6px',
+    border: '1px solid #dee2e6'
+  },
+  refreshBtn: {
+    padding: '8px 15px',
+    backgroundColor: '#3498db',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    marginBottom: '20px'
   },
   form: {
     backgroundColor: 'white',
