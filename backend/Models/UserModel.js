@@ -31,8 +31,8 @@ var userSchema = new mongoose.Schema({
   },
   status:{
     type:String,
-    enum:["active", "inactive"],
-    default:"inactive"
+    enum:["active", "inactive","suspended"],
+    default:"active"
   }
 });
 
@@ -48,5 +48,5 @@ userSchema.methods.comparePassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
-var userModel = mongoose.model("Users", userSchema);
+var userModel = mongoose.model("User", userSchema);
 module.exports = userModel;

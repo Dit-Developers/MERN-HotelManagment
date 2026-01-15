@@ -9,7 +9,7 @@ const serviceRequestSchema = new mongoose.Schema({
   serviceType: {
     type: String,
     required: true,
-    enum: ['room_cleaning', 'food_service', 'laundry', 'maintenance', 'wakeup_call', 'transport', 'other']
+    enum: ['room_cleaning', 'food_service', 'laundry', 'maintenance', 'wakeup_call', 'transport', 'housekeeping' ,'room_service','other',]
   },
   description: {
     type: String,
