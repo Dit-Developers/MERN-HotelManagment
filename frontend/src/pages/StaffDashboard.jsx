@@ -201,7 +201,7 @@ function StaffDashboard() {
       });
     }
   };
-
+ 
   // Mark room as dirty (needs cleaning)
   const markRoomAsDirty = async (roomId) => {
     if (window.confirm('Mark this room as needs cleaning?')) {

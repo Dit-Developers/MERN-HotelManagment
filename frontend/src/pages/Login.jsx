@@ -47,7 +47,7 @@ function Login() {
         break;
       default:
         navigate('/guest-dashboard');
-    }
+    } 
   };
 
   const handleSubmit = async (e) => {
