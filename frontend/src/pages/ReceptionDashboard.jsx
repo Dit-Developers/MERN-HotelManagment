@@ -192,7 +192,7 @@ const fetchGuests = async () => {
     }
   };
   
-  // 
+
   // Fetch bookings - Fixed to match Admin Dashboard method
   const fetchBookings = async () => {
     try {

@@ -211,7 +211,6 @@ function StaffDashboard() {
     }
   };
 
-  // 
   // Update service request status
   const updateRequestStatus = async (requestId, status) => {
     await apiCall('PUT', `/service-requests/${requestId}/status`, { 

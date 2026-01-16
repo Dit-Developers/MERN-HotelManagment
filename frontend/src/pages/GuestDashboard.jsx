@@ -129,7 +129,6 @@ function GuestDashboard() {
     setMessage("Please fill all required fields");
     return;
   } 
-  // 
 
   setLoading(true);
   setMessage(""); // clear previous messages
