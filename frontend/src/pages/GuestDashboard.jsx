@@ -128,7 +128,8 @@ function GuestDashboard() {
   if (!serviceForm.serviceType || !serviceForm.description || !serviceForm.roomNumber) {
     setMessage("Please fill all required fields");
     return;
-  }
+  } 
+  // 
 
   setLoading(true);
   setMessage(""); // clear previous messages
