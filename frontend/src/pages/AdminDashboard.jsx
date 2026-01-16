@@ -11,58 +11,58 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
   // Form states
-  const [newUser, setNewUser] = useState({ 
-    fullName: '', 
-    username: '', 
-    email: '', 
-    password: '', 
-    phone: '', 
-    role: 'guest', 
-    status: 'active' 
+  const [newUser, setNewUser] = useState({
+    fullName: '',
+    username: '',
+    email: '',
+    password: '',
+    phone: '',
+    role: 'guest',
+    status: 'active'
   });
-  const [newRoom, setNewRoom] = useState({ 
-    roomNumber: '', 
-    roomType: '', 
-    floor: '', 
-    bedCount: 1, 
-    hasAC: false, 
-    hasWIFI: false, 
-    hasTV: '', 
-    pricePerNight: '', 
-    isAvailable: true, 
-    roomStatus: 'available' 
+  const [newRoom, setNewRoom] = useState({
+    roomNumber: '',
+    roomType: '',
+    floor: '',
+    bedCount: 1,
+    hasAC: false,
+    hasWIFI: false,
+    hasTV: '',
+    pricePerNight: '',
+    isAvailable: true,
+    roomStatus: 'available'
   });
-  const [newBooking, setNewBooking] = useState({ 
-    guestId: '', 
-    roomId: '', 
-    bookingDate: '', 
-    checkinDate: '', 
-    checkoutDate: '', 
-    bookingStatus: 'pending' 
+  const [newBooking, setNewBooking] = useState({
+    guestId: '',
+    roomId: '',
+    bookingDate: '',
+    checkinDate: '',
+    checkoutDate: '',
+    bookingStatus: 'pending'
   });
-  const [newPayment, setNewPayment] = useState({ 
-    userId: '', 
-    bookingId: '', 
-    roomId: '', 
-    amount: 0, 
-    paymentMethod: 'cash', 
-    status: 'pending' 
+  const [newPayment, setNewPayment] = useState({
+    userId: '',
+    bookingId: '',
+    roomId: '',
+    amount: 0,
+    paymentMethod: 'cash',
+    status: 'pending'
   });
-  const [newReview, setNewReview] = useState({ 
-    userId: '', 
-    remarks: '' 
+  const [newReview, setNewReview] = useState({
+    userId: '',
+    remarks: ''
   });
-  const [newServiceRequest, setNewServiceRequest] = useState({ 
-    userId: '', 
-    roomNumber: '', 
-    serviceType: 'housekeeping', 
-    description: '', 
-    priority: 'normal', 
-    status: 'pending' 
+  const [newServiceRequest, setNewServiceRequest] = useState({
+    userId: '',
+    roomNumber: '',
+    serviceType: 'housekeeping',
+    description: '',
+    priority: 'normal',
+    status: 'pending'
   });
-  
+
   // Edit states
   const [editingUser, setEditingUser] = useState(null);
   const [editingRoom, setEditingRoom] = useState(null);
@@ -70,7 +70,7 @@ function AdminDashboard() {
   const [editingPayment, setEditingPayment] = useState(null);
   const [editingReview, setEditingReview] = useState(null);
   const [editingServiceRequest, setEditingServiceRequest] = useState(null);
-  
+
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const API_URL = 'http://localhost:5000/api';
   const token = localStorage.getItem('token');
@@ -112,37 +112,38 @@ function AdminDashboard() {
       // Fetch users
       const usersRes = await fetch(`${API_URL}/get-all-users`, { headers });
       const usersData = await usersRes.json();
-      setUsers(Array.isArray(usersData?.allUsers) ? usersData.allUsers : 
-              Array.isArray(usersData) ? usersData : []);
-      
+      setUsers(Array.isArray(usersData?.allUsers) ? usersData.allUsers :
+        Array.isArray(usersData) ? usersData : []);
+
       // Fetch rooms
       const roomsRes = await fetch(`${API_URL}/room/all-rooms`, { headers });
       const roomsData = await roomsRes.json();
-      setRooms(Array.isArray(roomsData) ? roomsData : []);
-      
+      console.log(roomsData.findRooms);
+      setRooms(roomsData.findRooms || []);
+
       // Fetch bookings
       const bookingsRes = await fetch(`${API_URL}/booking/all-bookings`, { headers });
       const bookingsData = await bookingsRes.json();
       setBookings(Array.isArray(bookingsData?.allBookings) ? bookingsData.allBookings :
-                 Array.isArray(bookingsData) ? bookingsData : []);
-      
+        Array.isArray(bookingsData) ? bookingsData : []);
+
       // Fetch payments
       const paymentsRes = await fetch(`${API_URL}/payment/get-all-payments`, { headers });
       const paymentsData = await paymentsRes.json();
       setPayments(Array.isArray(paymentsData?.allPayments) ? paymentsData.allPayments :
-                 Array.isArray(paymentsData) ? paymentsData : []);
-      
+        Array.isArray(paymentsData) ? paymentsData : []);
+
       // Fetch reviews
       const reviewsRes = await fetch(`${API_URL}/reviews/get-all-reviews`, { headers });
       const reviewsData = await reviewsRes.json();
       setReviews(Array.isArray(reviewsData?.getReviews) ? reviewsData.getReviews :
-                Array.isArray(reviewsData) ? reviewsData : []);
-      
+        Array.isArray(reviewsData) ? reviewsData : []);
+
       // Fetch service requests
       const servicesRes = await fetch(`${API_URL}/service-requests`, { headers });
       const servicesData = await servicesRes.json();
       setServiceRequests(Array.isArray(servicesData?.serviceRequests) ? servicesData.serviceRequests :
-                        Array.isArray(servicesData) ? servicesData : []);
+        Array.isArray(servicesData) ? servicesData : []);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -161,46 +162,46 @@ function AdminDashboard() {
         'Content-Type': 'application/json'
       };
 
-      switch(tab) {
+      switch (tab) {
         case 'users':
           const usersRes = await fetch(`${API_URL}/get-all-users`, { headers });
           const usersData = await usersRes.json();
-          setUsers(Array.isArray(usersData?.allUsers) ? usersData.allUsers : 
-                  Array.isArray(usersData) ? usersData : []);
+          setUsers(Array.isArray(usersData?.allUsers) ? usersData.allUsers :
+            Array.isArray(usersData) ? usersData : []);
           break;
-        
+
         case 'rooms':
           const roomsRes = await fetch(`${API_URL}/room/all-rooms`, { headers });
           const roomsData = await roomsRes.json();
-          setRooms(Array.isArray(roomsData) ? roomsData : []);
+          setRooms(roomsData.findRooms || []);
           break;
-        
+
         case 'bookings':
           const bookingsRes = await fetch(`${API_URL}/booking/all-bookings`, { headers });
           const bookingsData = await bookingsRes.json();
           setBookings(Array.isArray(bookingsData?.allBookings) ? bookingsData.allBookings :
-                     Array.isArray(bookingsData) ? bookingsData : []);
+            Array.isArray(bookingsData) ? bookingsData : []);
           break;
-        
+
         case 'payments':
           const paymentsRes = await fetch(`${API_URL}/payment/get-all-payments`, { headers });
           const paymentsData = await paymentsRes.json();
           setPayments(Array.isArray(paymentsData?.allPayments) ? paymentsData.allPayments :
-                     Array.isArray(paymentsData) ? paymentsData : []);
+            Array.isArray(paymentsData) ? paymentsData : []);
           break;
-        
+
         case 'reviews':
           const reviewsRes = await fetch(`${API_URL}/reviews/get-all-reviews`, { headers });
           const reviewsData = await reviewsRes.json();
           setReviews(Array.isArray(reviewsData?.getReviews) ? reviewsData.getReviews :
-                    Array.isArray(reviewsData) ? reviewsData : []);
+            Array.isArray(reviewsData) ? reviewsData : []);
           break;
-        
+
         case 'services':
           const servicesRes = await fetch(`${API_URL}/service-requests`, { headers });
           const servicesData = await servicesRes.json();
           setServiceRequests(Array.isArray(servicesData?.serviceRequests) ? servicesData.serviceRequests :
-                           Array.isArray(servicesData) ? servicesData : []);
+            Array.isArray(servicesData) ? servicesData : []);
           break;
       }
     } catch (error) {
@@ -259,18 +260,18 @@ function AdminDashboard() {
       const amount = parseFloat(p.amount) || 0;
       return sum + amount;
     }, 0);
-    
-    const activeBookings = bookingsArray.filter(b => 
-      b.bookingStatus === 'confirmed' || 
-      b.bookingStatus === 'checked-in' || 
+
+    const activeBookings = bookingsArray.filter(b =>
+      b.bookingStatus === 'confirmed' ||
+      b.bookingStatus === 'checked-in' ||
       b.bookingStatus === 'pending'
     ).length;
-    
+
     const pendingPayments = paymentsArray.filter(p => p.status === 'pending').length;
     const pendingServiceRequests = serviceRequestsArray.filter(sr => sr.status === 'pending').length;
-    
-    const availableRooms = roomsArray.filter(r => 
-      r.roomStatus === 'available' && r.isAvailable === true
+
+    const availableRooms = roomsArray.filter(r =>
+      r.roomStatus === 'available'
     ).length;
 
     return {
@@ -379,15 +380,15 @@ function AdminDashboard() {
   const renderContent = () => {
     if (loading && activeTab === 'dashboard') return <div style={styles.loading}>Loading dashboard...</div>;
 
-    switch(activeTab) {
+    switch (activeTab) {
       case 'dashboard':
         const stats = calculateDashboardStats();
-        
+
         return (
           <div style={styles.dashboard}>
             <h3>Hotel Admin Dashboard</h3>
             <p>Welcome back, <strong>{user.fullName}</strong>!</p>
-            
+
             <div style={styles.stats}>
               <div style={styles.statCard}>
                 <h4>Total Users</h4>
@@ -453,22 +454,22 @@ function AdminDashboard() {
           <div>
             <h3>Manage Users</h3>
             <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
-            
+
             {editingUser ? (
               <form onSubmit={updateUser} style={styles.form}>
                 <h4>Edit User</h4>
-                <input style={styles.input} placeholder="Full Name" value={editingUser.fullName} onChange={e => setEditingUser({...editingUser, fullName: e.target.value})} required />
-                <input style={styles.input} placeholder="Username" value={editingUser.username} onChange={e => setEditingUser({...editingUser, username: e.target.value})} required />
-                <input style={styles.input} type="email" placeholder="Email" value={editingUser.email} onChange={e => setEditingUser({...editingUser, email: e.target.value})} required />
-                <input style={styles.input} placeholder="Phone" value={editingUser.phone} onChange={e => setEditingUser({...editingUser, phone: e.target.value})} />
-                <select style={styles.input} value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value})}>
+                <input style={styles.input} placeholder="Full Name" value={editingUser.fullName} onChange={e => setEditingUser({ ...editingUser, fullName: e.target.value })} required />
+                <input style={styles.input} placeholder="Username" value={editingUser.username} onChange={e => setEditingUser({ ...editingUser, username: e.target.value })} required />
+                <input style={styles.input} type="email" placeholder="Email" value={editingUser.email} onChange={e => setEditingUser({ ...editingUser, email: e.target.value })} required />
+                <input style={styles.input} placeholder="Phone" value={editingUser.phone} onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })} />
+                <select style={styles.input} value={editingUser.role} onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}>
                   <option value="guest">Guest</option>
                   <option value="admin">Admin</option>
                   <option value="receptionist">Receptionist</option>
                   <option value="manager">Manager</option>
                   <option value="staff">Staff</option>
                 </select>
-                <select style={styles.input} value={editingUser.status} onChange={e => setEditingUser({...editingUser, status: e.target.value})}>
+                <select style={styles.input} value={editingUser.status} onChange={e => setEditingUser({ ...editingUser, status: e.target.value })}>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                   <option value="suspended">Suspended</option>
@@ -481,12 +482,12 @@ function AdminDashboard() {
             ) : (
               <form onSubmit={createUser} style={styles.form}>
                 <h4>Create New User</h4>
-                <input style={styles.input} placeholder="Full Name" value={newUser.fullName} onChange={e => setNewUser({...newUser, fullName: e.target.value})} required />
-                <input style={styles.input} placeholder="Username" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} required />
-                <input style={styles.input} type="email" placeholder="Email" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} required />
-                <input style={styles.input} type="password" placeholder="Password" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} required />
-                <input style={styles.input} placeholder="Phone" value={newUser.phone} onChange={e => setNewUser({...newUser, phone: e.target.value})} />
-                <select style={styles.input} value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
+                <input style={styles.input} placeholder="Full Name" value={newUser.fullName} onChange={e => setNewUser({ ...newUser, fullName: e.target.value })} required />
+                <input style={styles.input} placeholder="Username" value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} required />
+                <input style={styles.input} type="email" placeholder="Email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} required />
+                <input style={styles.input} type="password" placeholder="Password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} required />
+                <input style={styles.input} placeholder="Phone" value={newUser.phone} onChange={e => setNewUser({ ...newUser, phone: e.target.value })} />
+                <select style={styles.input} value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })}>
                   <option value="guest">Guest</option>
                   <option value="admin">Admin</option>
                   <option value="receptionist">Receptionist</option>
@@ -499,28 +500,28 @@ function AdminDashboard() {
 
             <div style={styles.listContainer}>
               <h4>All Users ({Array.isArray(users) ? users.length : 0})</h4>
-              {loading ? <div style={styles.loading}>Loading users...</div> : 
-               !Array.isArray(users) || users.length === 0 ? 
-               <div style={styles.noData}>No users found</div> : 
-               users.map(u => (
-                <div key={u._id} style={styles.itemCard}>
-                  <div>
-                    <strong>{u.fullName}</strong>
-                    <p>{u.email}</p>
-                    <p>Role: {u.role} | Status: {u.status}</p>
-                    <small>ID: {u._id}</small>
-                  </div>
-                  <div style={styles.actionButtons}>
-                    <button style={styles.editBtn} onClick={() => setEditingUser({...u})}>Edit</button>
-                    <select style={styles.statusSelect} value={u.status} onChange={e => apiCall('PUT', `/update-status/${u._id}`, { status: e.target.value })}>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="suspended">Suspended</option>
-                    </select>
-                    <button style={styles.deleteBtn} onClick={() => deleteUser(u._id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
+              {loading ? <div style={styles.loading}>Loading users...</div> :
+                !Array.isArray(users) || users.length === 0 ?
+                  <div style={styles.noData}>No users found</div> :
+                  users.map(u => (
+                    <div key={u._id} style={styles.itemCard}>
+                      <div>
+                        <strong>{u.fullName}</strong>
+                        <p>{u.email}</p>
+                        <p>Role: {u.role} | Status: {u.status}</p>
+                        <small>ID: {u._id}</small>
+                      </div>
+                      <div style={styles.actionButtons}>
+                        <button style={styles.editBtn} onClick={() => setEditingUser({ ...u })}>Edit</button>
+                        <select style={styles.statusSelect} value={u.status} onChange={e => apiCall('PUT', `/update-status/${u._id}`, { status: e.target.value })}>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="suspended">Suspended</option>
+                        </select>
+                        <button style={styles.deleteBtn} onClick={() => deleteUser(u._id)}>Delete</button>
+                      </div>
+                    </div>
+                  ))}
             </div>
           </div>
         );
@@ -530,14 +531,14 @@ function AdminDashboard() {
           <div>
             <h3>Manage Rooms</h3>
             <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
-            
+
             {editingRoom ? (
               <form onSubmit={updateRoom} style={styles.form}>
                 <h4>Edit Room</h4>
-                <input style={styles.input} placeholder="Room Number" value={editingRoom.roomNumber} onChange={e => setEditingRoom({...editingRoom, roomNumber: e.target.value})} required />
-                <input style={styles.input} placeholder="Room Type" value={editingRoom.roomType} onChange={e => setEditingRoom({...editingRoom, roomType: e.target.value})} required />
-                <input style={styles.input} placeholder="Price per Night" value={editingRoom.pricePerNight} onChange={e => setEditingRoom({...editingRoom, pricePerNight: e.target.value})} required />
-                <select style={styles.input} value={editingRoom.roomStatus} onChange={e => setEditingRoom({...editingRoom, roomStatus: e.target.value})}>
+                <input style={styles.input} placeholder="Room Number" value={editingRoom.roomNumber} onChange={e => setEditingRoom({ ...editingRoom, roomNumber: e.target.value })} required />
+                <input style={styles.input} placeholder="Room Type" value={editingRoom.roomType} onChange={e => setEditingRoom({ ...editingRoom, roomType: e.target.value })} required />
+                <input style={styles.input} placeholder="Price per Night" value={editingRoom.pricePerNight} onChange={e => setEditingRoom({ ...editingRoom, pricePerNight: e.target.value })} required />
+                <select style={styles.input} value={editingRoom.roomStatus} onChange={e => setEditingRoom({ ...editingRoom, roomStatus: e.target.value })}>
                   <option value="available">Available</option>
                   <option value="booked">Booked</option>
                   <option value="under maintenance">Under Maintenance</option>
@@ -551,10 +552,10 @@ function AdminDashboard() {
             ) : (
               <form onSubmit={createRoom} style={styles.form}>
                 <h4>Create New Room</h4>
-                <input style={styles.input} placeholder="Room Number" value={newRoom.roomNumber} onChange={e => setNewRoom({...newRoom, roomNumber: e.target.value})} required />
-                <input style={styles.input} placeholder="Room Type" value={newRoom.roomType} onChange={e => setNewRoom({...newRoom, roomType: e.target.value})} required />
-                <input style={styles.input} placeholder="Price per Night" value={newRoom.pricePerNight} onChange={e => setNewRoom({...newRoom, pricePerNight: e.target.value})} required />
-                <select style={styles.input} value={newRoom.roomStatus} onChange={e => setNewRoom({...newRoom, roomStatus: e.target.value})}>
+                <input style={styles.input} placeholder="Room Number" value={newRoom.roomNumber} onChange={e => setNewRoom({ ...newRoom, roomNumber: e.target.value })} required />
+                <input style={styles.input} placeholder="Room Type" value={newRoom.roomType} onChange={e => setNewRoom({ ...newRoom, roomType: e.target.value })} required />
+                <input style={styles.input} placeholder="Price per Night" value={newRoom.pricePerNight} onChange={e => setNewRoom({ ...newRoom, pricePerNight: e.target.value })} required />
+                <select style={styles.input} value={newRoom.roomStatus} onChange={e => setNewRoom({ ...newRoom, roomStatus: e.target.value })}>
                   <option value="available">Available</option>
                   <option value="booked">Booked</option>
                   <option value="under maintenance">Under Maintenance</option>
@@ -564,32 +565,45 @@ function AdminDashboard() {
               </form>
             )}
 
-            <div style={styles.listContainer}>
-              <h4>All Rooms ({Array.isArray(rooms) ? rooms.length : 0})</h4>
-              {loading ? <div style={styles.loading}>Loading rooms...</div> : 
-               !Array.isArray(rooms) || rooms.length === 0 ? 
-               <div style={styles.noData}>No rooms found</div> : 
-               rooms.map(r => (
-                <div key={r._id} style={styles.itemCard}>
-                  <div>
-                    <strong>Room {r.roomNumber}</strong>
-                    <p>Type: {r.roomType}</p>
-                    <p>Price: ${r.pricePerNight}/night</p>
-                    <p>Status: {r.roomStatus}</p>
-                  </div>
-                  <div style={styles.actionButtons}>
-                    <button style={styles.editBtn} onClick={() => setEditingRoom({...r})}>Edit</button>
-                    <select style={styles.statusSelect} value={r.roomStatus} onChange={e => apiCall('PUT', `/room/update-room-status/${r._id}`, { status: e.target.value })}>
-                      <option value="available">Available</option>
-                      <option value="booked">Booked</option>
-                      <option value="under maintenance">Under Maintenance</option>
-                      <option value="cleaning">Cleaning</option>
-                    </select>
-                    <button style={styles.deleteBtn} onClick={() => deleteRoom(r._id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+           
+           <div style={styles.listContainer}>
+  <h4>All Rooms {Array.isArray(rooms) ? rooms.length : 0}</h4>
+  {loading ? (
+    <div style={styles.loading}>Loading rooms...</div>
+  ) : !Array.isArray(rooms) ? (
+    <div style={styles.noData}>Error loading rooms</div>
+  ) : rooms.length === 0 ? (
+    <div style={styles.noData}>No rooms found</div>
+  ) : (
+    rooms.map(r => (
+      <div key={r._id} style={styles.itemCard}>
+        <div>
+          <strong>Room {r.roomNumber || 'N/A'}</strong>
+          <p>Type: {r.roomType || 'Not specified'}</p>
+          <p>Price: ${r.pricePerNight || '0'}/night</p>
+          <p>Status: {r.roomStatus || 'unknown'}</p>
+        </div>
+        <div style={styles.actionButtons}>
+          <button style={styles.editBtn} onClick={() => setEditingRoom({ ...r })}>Edit</button>
+          <select 
+            style={styles.statusSelect} 
+            value={r.roomStatus || 'available'} 
+            onChange={e => apiCall('PUT', `/room/update-room-status/${r._id}`, { status: e.target.value })}
+          >
+            <option value="available">Available</option>
+            <option value="occupied">Occupied</option>
+            <option value="booked">Booked</option>
+            <option value="under maintenance">Under Maintenance</option>
+            <option value="cleaning">Cleaning</option>
+          </select>
+          <button style={styles.deleteBtn} onClick={() => deleteRoom(r._id)}>Delete</button>
+        </div>
+      </div>
+    ))
+  )}
+</div>
+
+
           </div>
         );
 
@@ -598,14 +612,14 @@ function AdminDashboard() {
           <div>
             <h3>Manage Bookings</h3>
             <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
-            
+
             <form onSubmit={createBooking} style={styles.form}>
               <h4>Create New Booking</h4>
-              <input style={styles.input} placeholder="Guest ID" value={newBooking.guestId} onChange={e => setNewBooking({...newBooking, guestId: e.target.value})} required />
-              <input style={styles.input} placeholder="Room ID" value={newBooking.roomId} onChange={e => setNewBooking({...newBooking, roomId: e.target.value})} required />
-              <input style={styles.input} type="date" placeholder="Check-in Date" value={newBooking.checkinDate} onChange={e => setNewBooking({...newBooking, checkinDate: e.target.value})} required />
-              <input style={styles.input} type="date" placeholder="Check-out Date" value={newBooking.checkoutDate} onChange={e => setNewBooking({...newBooking, checkoutDate: e.target.value})} required />
-              <select style={styles.input} value={newBooking.bookingStatus} onChange={e => setNewBooking({...newBooking, bookingStatus: e.target.value})}>
+              <input style={styles.input} placeholder="Guest ID" value={newBooking.guestId} onChange={e => setNewBooking({ ...newBooking, guestId: e.target.value })} required />
+              <input style={styles.input} placeholder="Room ID" value={newBooking.roomId} onChange={e => setNewBooking({ ...newBooking, roomId: e.target.value })} required />
+              <input style={styles.input} type="date" placeholder="Check-in Date" value={newBooking.checkinDate} onChange={e => setNewBooking({ ...newBooking, checkinDate: e.target.value })} required />
+              <input style={styles.input} type="date" placeholder="Check-out Date" value={newBooking.checkoutDate} onChange={e => setNewBooking({ ...newBooking, checkoutDate: e.target.value })} required />
+              <select style={styles.input} value={newBooking.bookingStatus} onChange={e => setNewBooking({ ...newBooking, bookingStatus: e.target.value })}>
                 <option value="pending">Pending</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="checked-in">Checked-in</option>
@@ -617,30 +631,30 @@ function AdminDashboard() {
 
             <div style={styles.listContainer}>
               <h4>All Bookings ({Array.isArray(bookings) ? bookings.length : 0})</h4>
-              {loading ? <div style={styles.loading}>Loading bookings...</div> : 
-               !Array.isArray(bookings) || bookings.length === 0 ? 
-               <div style={styles.noData}>No bookings found</div> : 
-               bookings.map(b => (
-                <div key={b._id} style={styles.itemCard}>
-                  <div>
-                    <strong>Booking #{b._id?.slice(-6)}</strong>
-                    <p>Guest: {b.guestId}</p>
-                    <p>Room: {b.roomId}</p>
-                    <p>Check-in: {new Date(b.checkinDate).toLocaleDateString()}</p>
-                    <p>Check-out: {new Date(b.checkoutDate).toLocaleDateString()}</p>
-                    <p>Status: {b.bookingStatus}</p>
-                  </div>
-                  <div>
-                    <select style={styles.statusSelect} value={b.bookingStatus} onChange={e => updateBookingStatus(b._id, e.target.value)}>
-                      <option value="pending">Pending</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="checked-in">Checked-in</option>
-                      <option value="checked-out">Checked-out</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
+              {loading ? <div style={styles.loading}>Loading bookings...</div> :
+                !Array.isArray(bookings) || bookings.length === 0 ?
+                  <div style={styles.noData}>No bookings found</div> :
+                  bookings.map(b => (
+                    <div key={b._id} style={styles.itemCard}>
+                      <div>
+                        <strong>Booking #{b._id?.slice(-6)}</strong>
+                        <p>Guest: {b.guestId}</p>
+                        <p>Room: {b.roomId}</p>
+                        <p>Check-in: {new Date(b.checkinDate).toLocaleDateString()}</p>
+                        <p>Check-out: {new Date(b.checkoutDate).toLocaleDateString()}</p>
+                        <p>Status: {b.bookingStatus}</p>
+                      </div>
+                      <div>
+                        <select style={styles.statusSelect} value={b.bookingStatus} onChange={e => updateBookingStatus(b._id, e.target.value)}>
+                          <option value="pending">Pending</option>
+                          <option value="confirmed">Confirmed</option>
+                          <option value="checked-in">Checked-in</option>
+                          <option value="checked-out">Checked-out</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
             </div>
           </div>
         );
@@ -650,13 +664,13 @@ function AdminDashboard() {
           <div>
             <h3>Manage Payments</h3>
             <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
-            
+
             <form onSubmit={createPayment} style={styles.form}>
               <h4>Create New Payment</h4>
-              <input style={styles.input} placeholder="User ID" value={newPayment.userId} onChange={e => setNewPayment({...newPayment, userId: e.target.value})} required />
-              <input style={styles.input} placeholder="Booking ID" value={newPayment.bookingId} onChange={e => setNewPayment({...newPayment, bookingId: e.target.value})} required />
-              <input style={styles.input} type="number" placeholder="Amount" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} required />
-              <select style={styles.input} value={newPayment.paymentMethod} onChange={e => setNewPayment({...newPayment, paymentMethod: e.target.value})}>
+              <input style={styles.input} placeholder="User ID" value={newPayment.userId} onChange={e => setNewPayment({ ...newPayment, userId: e.target.value })} required />
+              <input style={styles.input} placeholder="Booking ID" value={newPayment.bookingId} onChange={e => setNewPayment({ ...newPayment, bookingId: e.target.value })} required />
+              <input style={styles.input} type="number" placeholder="Amount" value={newPayment.amount} onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })} required />
+              <select style={styles.input} value={newPayment.paymentMethod} onChange={e => setNewPayment({ ...newPayment, paymentMethod: e.target.value })}>
                 <option value="cash">Cash</option>
                 <option value="card">Card</option>
                 <option value="cheque">Cheque</option>
@@ -664,7 +678,7 @@ function AdminDashboard() {
                 <option value="debit_card">Debit Card</option>
                 <option value="online">Online</option>
               </select>
-              <select style={styles.input} value={newPayment.status} onChange={e => setNewPayment({...newPayment, status: e.target.value})}>
+              <select style={styles.input} value={newPayment.status} onChange={e => setNewPayment({ ...newPayment, status: e.target.value })}>
                 <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
                 <option value="failed">Failed</option>
@@ -676,30 +690,30 @@ function AdminDashboard() {
 
             <div style={styles.listContainer}>
               <h4>All Payments ({Array.isArray(payments) ? payments.length : 0})</h4>
-              {loading ? <div style={styles.loading}>Loading payments...</div> : 
-               !Array.isArray(payments) || payments.length === 0 ? 
-               <div style={styles.noData}>No payments found</div> : 
-               payments.map(p => (
-                <div key={p._id} style={styles.itemCard}>
-                  <div>
-                    <strong>Payment #{p._id?.slice(-6)}</strong>
-                    <p>Amount: ${p.amount}</p>
-                    <p>Method: {p.paymentMethod}</p>
-                    <p>Status: {p.status}</p>
-                    <p>User: {p.userId}</p>
-                    <p>Booking: {p.bookingId}</p>
-                  </div>
-                  <div>
-                    <select style={styles.statusSelect} value={p.status} onChange={e => updatePaymentStatus(p._id, e.target.value)}>
-                      <option value="pending">Pending</option>
-                      <option value="completed">Completed</option>
-                      <option value="failed">Failed</option>
-                      <option value="cancelled">Cancelled</option>
-                      <option value="refunded">Refunded</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
+              {loading ? <div style={styles.loading}>Loading payments...</div> :
+                !Array.isArray(payments) || payments.length === 0 ?
+                  <div style={styles.noData}>No payments found</div> :
+                  payments.map(p => (
+                    <div key={p._id} style={styles.itemCard}>
+                      <div>
+                        <strong>Payment #{p._id?.slice(-6)}</strong>
+                        <p>Amount: ${p.amount}</p>
+                        <p>Method: {p.paymentMethod}</p>
+                        <p>Status: {p.status}</p>
+                        <p>User: {p.userId}</p>
+                        <p>Booking: {p.bookingId}</p>
+                      </div>
+                      <div>
+                        <select style={styles.statusSelect} value={p.status} onChange={e => updatePaymentStatus(p._id, e.target.value)}>
+                          <option value="pending">Pending</option>
+                          <option value="completed">Completed</option>
+                          <option value="failed">Failed</option>
+                          <option value="cancelled">Cancelled</option>
+                          <option value="refunded">Refunded</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
             </div>
           </div>
         );
@@ -709,32 +723,32 @@ function AdminDashboard() {
           <div>
             <h3>Manage Reviews</h3>
             <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
-            
+
             <form onSubmit={createReview} style={styles.form}>
               <h4>Create New Review</h4>
-              <input style={styles.input} placeholder="User ID" value={newReview.userId} onChange={e => setNewReview({...newReview, userId: e.target.value})} required />
-              <textarea style={styles.textarea} placeholder="Remarks" value={newReview.remarks} onChange={e => setNewReview({...newReview, remarks: e.target.value})} required />
+              <input style={styles.input} placeholder="User ID" value={newReview.userId} onChange={e => setNewReview({ ...newReview, userId: e.target.value })} required />
+              <textarea style={styles.textarea} placeholder="Remarks" value={newReview.remarks} onChange={e => setNewReview({ ...newReview, remarks: e.target.value })} required />
               <button type="submit" style={styles.submitBtn}>Create Review</button>
             </form>
 
             <div style={styles.listContainer}>
               <h4>All Reviews ({Array.isArray(reviews) ? reviews.length : 0})</h4>
-              {loading ? <div style={styles.loading}>Loading reviews...</div> : 
-               !Array.isArray(reviews) || reviews.length === 0 ? 
-               <div style={styles.noData}>No reviews found</div> : 
-               reviews.map(r => (
-                <div key={r._id} style={styles.itemCard}>
-                  <div>
-                    <strong>Review #{r._id?.slice(-6)}</strong>
-                    <p>User: {r.userId}</p>
-                    <p>{r.remarks}</p>
-                    <small>Date: {new Date(r.createdAt).toLocaleDateString()}</small>
-                  </div>
-                  <div>
-                    <button style={styles.deleteBtn} onClick={() => deleteReview(r._id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
+              {loading ? <div style={styles.loading}>Loading reviews...</div> :
+                !Array.isArray(reviews) || reviews.length === 0 ?
+                  <div style={styles.noData}>No reviews found</div> :
+                  reviews.map(r => (
+                    <div key={r._id} style={styles.itemCard}>
+                      <div>
+                        <strong>Review #{r._id?.slice(-6)}</strong>
+                        <p>User: {r.userId}</p>
+                        <p>{r.remarks}</p>
+                        <small>Date: {new Date(r.createdAt).toLocaleDateString()}</small>
+                      </div>
+                      <div>
+                        <button style={styles.deleteBtn} onClick={() => deleteReview(r._id)}>Delete</button>
+                      </div>
+                    </div>
+                  ))}
             </div>
           </div>
         );
@@ -744,12 +758,12 @@ function AdminDashboard() {
           <div>
             <h3>Manage Service Requests</h3>
             <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
-            
+
             <form onSubmit={createServiceRequest} style={styles.form}>
               <h4>Create New Service Request</h4>
-              <input style={styles.input} placeholder="User ID" value={newServiceRequest.userId} onChange={e => setNewServiceRequest({...newServiceRequest, userId: e.target.value})} required />
-              <input style={styles.input} placeholder="Room Number" value={newServiceRequest.roomNumber} onChange={e => setNewServiceRequest({...newServiceRequest, roomNumber: e.target.value})} required />
-              <select style={styles.input} value={newServiceRequest.serviceType} onChange={e => setNewServiceRequest({...newServiceRequest, serviceType: e.target.value})}>
+              <input style={styles.input} placeholder="User ID" value={newServiceRequest.userId} onChange={e => setNewServiceRequest({ ...newServiceRequest, userId: e.target.value })} required />
+              <input style={styles.input} placeholder="Room Number" value={newServiceRequest.roomNumber} onChange={e => setNewServiceRequest({ ...newServiceRequest, roomNumber: e.target.value })} required />
+              <select style={styles.input} value={newServiceRequest.serviceType} onChange={e => setNewServiceRequest({ ...newServiceRequest, serviceType: e.target.value })}>
                 <option value="housekeeping">Housekeeping</option>
                 <option value="room_service">Room Service</option>
                 <option value="laundry">Laundry</option>
@@ -757,8 +771,8 @@ function AdminDashboard() {
                 <option value="room_cleaning">Room Cleaning</option>
                 <option value="food_service">Food Service</option>
               </select>
-              <textarea style={styles.textarea} placeholder="Description" value={newServiceRequest.description} onChange={e => setNewServiceRequest({...newServiceRequest, description: e.target.value})} required />
-              <select style={styles.input} value={newServiceRequest.priority} onChange={e => setNewServiceRequest({...newServiceRequest, priority: e.target.value})}>
+              <textarea style={styles.textarea} placeholder="Description" value={newServiceRequest.description} onChange={e => setNewServiceRequest({ ...newServiceRequest, description: e.target.value })} required />
+              <select style={styles.input} value={newServiceRequest.priority} onChange={e => setNewServiceRequest({ ...newServiceRequest, priority: e.target.value })}>
                 <option value="low">Low</option>
                 <option value="normal">Normal</option>
                 <option value="high">High</option>
@@ -769,28 +783,28 @@ function AdminDashboard() {
 
             <div style={styles.listContainer}>
               <h4>All Service Requests ({Array.isArray(serviceRequests) ? serviceRequests.length : 0})</h4>
-              {loading ? <div style={styles.loading}>Loading service requests...</div> : 
-               !Array.isArray(serviceRequests) || serviceRequests.length === 0 ? 
-               <div style={styles.noData}>No service requests found</div> : 
-               serviceRequests.map(sr => (
-                <div key={sr._id} style={styles.itemCard}>
-                  <div>
-                    <strong>{sr.serviceType}</strong>
-                    <p>Room: {sr.roomNumber}</p>
-                    <p>{sr.description}</p>
-                    <p>Priority: {sr.priority}</p>
-                    <p>Status: {sr.status}</p>
-                  </div>
-                  <div>
-                    <select style={styles.statusSelect} value={sr.status} onChange={e => updateServiceStatus(sr._id, e.target.value)}>
-                      <option value="pending">Pending</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
+              {loading ? <div style={styles.loading}>Loading service requests...</div> :
+                !Array.isArray(serviceRequests) || serviceRequests.length === 0 ?
+                  <div style={styles.noData}>No service requests found</div> :
+                  serviceRequests.map(sr => (
+                    <div key={sr._id} style={styles.itemCard}>
+                      <div>
+                        <strong>{sr.serviceType}</strong>
+                        <p>Room: {sr.roomNumber}</p>
+                        <p>{sr.description}</p>
+                        <p>Priority: {sr.priority}</p>
+                        <p>Status: {sr.status}</p>
+                      </div>
+                      <div>
+                        <select style={styles.statusSelect} value={sr.status} onChange={e => updateServiceStatus(sr._id, e.target.value)}>
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
             </div>
           </div>
         );

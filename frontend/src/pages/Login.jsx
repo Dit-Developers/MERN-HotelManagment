@@ -1,11 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
+
+  // Check if user is already logged in on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userString = localStorage.getItem('user');
+    
+    if (token && userString) {
+      try {
+        const user = JSON.parse(userString);
+        // Immediately redirect to dashboard if already logged in
+        redirectToDashboard(user.role);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        localStorage.clear(); // Clear invalid data
+      }
+    }
+  }, [navigate]); // Add navigate to dependency array
+
+  const redirectToDashboard = (role) => {
+    switch (role) {
+      case 'admin':
+        navigate('/admin-dashboard');
+        break;
+      case 'manager':
+        navigate('/manager-dashboard');
+        break;
+      case 'receptionist':
+        navigate('/reception-dashboard');
+        break;
+      case 'staff':
+        navigate('/staff-dashboard');
+        break;
+
+      case 'user':  
+      case 'guest':
+        navigate('/');
+        break;
+      default:
+        navigate('/guest-dashboard');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,19 +69,7 @@ function Login() {
 
       // Redirect based on user role after 1 second
       setTimeout(() => {
-        const user = response.data.user;
-        
-        if (user.role === 'admin') {
-          window.location.href = '/admin-dashboard';
-        } else if (user.role === 'manager') {
-          window.location.href = '/manager-dashboard';
-        } else if (user.role === 'receptionist') {
-          window.location.href = '/reception-dashboard';
-        } else if (user.role === 'staff') {
-          window.location.href = '/staff-dashboard';
-        } else {
-          window.location.href = '/guest-dashboard'; // or just '/'
-        }
+        redirectToDashboard(response.data.user.role);
       }, 1000);
 
     } catch (error) {

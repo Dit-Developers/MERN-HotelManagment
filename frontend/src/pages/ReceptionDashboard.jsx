@@ -541,30 +541,7 @@ const fetchGuests = async () => {
                 />
               </div>
               
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
-                  <label>ID Type</label>
-                  <select
-                    value={guestForm.idType}
-                    onChange={(e) => setGuestForm({...guestForm, idType: e.target.value})}
-                    style={styles.input}
-                  >
-                    <option value="passport">Passport</option>
-                    <option value="driving_license">Driving License</option>
-                    <option value="national_id">National ID</option>
-                  </select>
-                </div>
-                
-                <div style={styles.formGroup}>
-                  <label>ID Number</label>
-                  <input
-                    type="text"
-                    value={guestForm.idNumber}
-                    onChange={(e) => setGuestForm({...guestForm, idNumber: e.target.value})}
-                    style={styles.input}
-                  />
-                </div>
-              </div>
+             
               
               <div style={styles.formRow}>
                 <div style={styles.formGroup}>

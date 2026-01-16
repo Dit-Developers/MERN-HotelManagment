@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 var bookingSchema = new mongoose.Schema({
     guestId:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:'Users'
+        ref:'User'
     },
     roomId:{
         type:mongoose.Schema.Types.ObjectId,

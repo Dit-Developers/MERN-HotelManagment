@@ -76,7 +76,7 @@ const styles = {
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: '40px',
     marginBottom: '40px',
-    '@media (max-width: 768px)': {
+    '@media (maxWidth: 768px)': {
       gridTemplateColumns: '1fr',
       gap: '30px'
     }

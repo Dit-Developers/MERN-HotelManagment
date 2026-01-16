@@ -130,13 +130,29 @@ function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/guest-dashboard" element={
+        {/* <Route path="/guest-dashboard" element={
           <ProtectedRoute allowedRoles={['guest']}>
             <DashboardLayout>
               <GuestDashboard />
             </DashboardLayout>
           </ProtectedRoute>
-        } />
+        } /> */}
+        // Add this route in App.jsx
+<Route path="/user-dashboard" element={
+  <ProtectedRoute allowedRoles={['user']}>
+    <DashboardLayout>
+      <GuestDashboard />
+    </DashboardLayout>
+  </ProtectedRoute>
+} />
+
+        <Route path="/guest-dashboard" element={
+  <ProtectedRoute allowedRoles={['guest', 'user']}>
+    <DashboardLayout>
+      <GuestDashboard />
+    </DashboardLayout>
+  </ProtectedRoute>
+} />
         
         {/* Dynamic dashboard route - redirects to role-specific dashboard */}
         <Route path="/dashboard" element={
