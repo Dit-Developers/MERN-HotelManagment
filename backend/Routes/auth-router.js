@@ -14,6 +14,7 @@ router.get("/get-all-users", authController.getAllUsers);
 router.get("/get-user/:id", authController.getSingleUser);
 router.put("/update-status/:id", authController.updateUserStatus);
 router.delete("/delete-user/:id", authController.deleteUser);
+
 // Add this line with other routes:
 // router.post("/logout", authenticateJWT, authController.logout);
 

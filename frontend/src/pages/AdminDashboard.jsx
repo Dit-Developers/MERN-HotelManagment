@@ -57,7 +57,7 @@ function AdminDashboard() {
   const [newServiceRequest, setNewServiceRequest] = useState({
     userId: '',
     roomNumber: '',
-    serviceType: 'housekeeping',
+    serviceType: 'room_cleaning',
     description: '',
     priority: 'normal',
     status: 'pending'
@@ -118,7 +118,6 @@ function AdminDashboard() {
       // Fetch rooms
       const roomsRes = await fetch(`${API_URL}/room/all-rooms`, { headers });
       const roomsData = await roomsRes.json();
-      console.log(roomsData.findRooms);
       setRooms(roomsData.findRooms || []);
 
       // Fetch bookings
@@ -127,10 +126,10 @@ function AdminDashboard() {
       setBookings(Array.isArray(bookingsData?.allBookings) ? bookingsData.allBookings :
         Array.isArray(bookingsData) ? bookingsData : []);
 
-      // Fetch payments
+      // Fetch payments - FIXED: using payments not allPayments
       const paymentsRes = await fetch(`${API_URL}/payment/get-all-payments`, { headers });
       const paymentsData = await paymentsRes.json();
-      setPayments(Array.isArray(paymentsData?.allPayments) ? paymentsData.allPayments :
+      setPayments(Array.isArray(paymentsData?.payments) ? paymentsData.payments :
         Array.isArray(paymentsData) ? paymentsData : []);
 
       // Fetch reviews
@@ -186,7 +185,7 @@ function AdminDashboard() {
         case 'payments':
           const paymentsRes = await fetch(`${API_URL}/payment/get-all-payments`, { headers });
           const paymentsData = await paymentsRes.json();
-          setPayments(Array.isArray(paymentsData?.allPayments) ? paymentsData.allPayments :
+          setPayments(Array.isArray(paymentsData?.payments) ? paymentsData.payments :
             Array.isArray(paymentsData) ? paymentsData : []);
           break;
 
@@ -246,9 +245,8 @@ function AdminDashboard() {
     }
   };
 
-  // Calculate dashboard statistics - SAFE VERSION
+  // Calculate dashboard statistics
   const calculateDashboardStats = () => {
-    // Ensure all variables are arrays
     const paymentsArray = Array.isArray(payments) ? payments : [];
     const bookingsArray = Array.isArray(bookings) ? bookings : [];
     const roomsArray = Array.isArray(rooms) ? rooms : [];
@@ -256,9 +254,16 @@ function AdminDashboard() {
     const usersArray = Array.isArray(users) ? users : [];
     const reviewsArray = Array.isArray(reviews) ? reviews : [];
 
-    const totalRevenue = paymentsArray.reduce((sum, p) => {
+    // Total Cost - Sum of ALL payments
+    const totalCost = paymentsArray.reduce((sum, p) => {
       const amount = parseFloat(p.amount) || 0;
       return sum + amount;
+    }, 0);
+
+    // Revenue Earned - Only from "completed" payments
+    const revenueEarned = paymentsArray.reduce((sum, p) => {
+      const amount = parseFloat(p.amount) || 0;
+      return p.status === 'completed' ? sum + amount : sum;
     }, 0);
 
     const activeBookings = bookingsArray.filter(b =>
@@ -268,6 +273,7 @@ function AdminDashboard() {
     ).length;
 
     const pendingPayments = paymentsArray.filter(p => p.status === 'pending').length;
+    const completedPayments = paymentsArray.filter(p => p.status === 'completed').length;
     const pendingServiceRequests = serviceRequestsArray.filter(sr => sr.status === 'pending').length;
 
     const availableRooms = roomsArray.filter(r =>
@@ -278,12 +284,72 @@ function AdminDashboard() {
       totalUsers: usersArray.length,
       totalRooms: roomsArray.length,
       activeBookings,
-      totalRevenue,
+      totalCost,
+      revenueEarned,
+      pendingRevenue: totalCost - revenueEarned,
       pendingPayments,
+      completedPayments,
       pendingServiceRequests,
       availableRooms,
       totalReviews: reviewsArray.length
     };
+  };
+
+  // Get user name by ID
+  const getUserName = (userId) => {
+    if (!userId) return 'Unknown User';
+    
+    if (typeof userId === 'object') {
+      return userId.fullName || `User ${userId._id?.slice(-6)}`;
+    }
+    
+    const userObj = Array.isArray(users) ? users.find(u => u._id === userId) : null;
+    return userObj ? userObj.fullName : `User ${userId?.slice(-6)}`;
+  };
+
+  // Get booking ID safely
+  const getBookingId = (bookingId) => {
+    if (!bookingId) return 'N/A';
+    
+    if (typeof bookingId === 'object') {
+      return bookingId._id?.slice(-6) || 'N/A';
+    }
+    
+    return bookingId.slice(-6) || 'N/A';
+  };
+
+  // Get latest bookings with user info
+  const getLatestBookings = () => {
+    if (!Array.isArray(bookings) || bookings.length === 0) {
+      return [];
+    }
+    
+    return bookings
+      .sort((a, b) => new Date(b.createdAt || b.checkinDate) - new Date(a.createdAt || a.checkinDate))
+      .slice(0, 3)
+      .map(booking => ({
+        id: booking._id?.slice(-6) || 'N/A',
+        userName: getUserName(booking.guestId),
+        status: booking.bookingStatus || 'unknown',
+        price: booking.totalAmount || 'N/A'
+      }));
+  };
+
+  // Get latest payments
+  const getLatestPayments = () => {
+    if (!Array.isArray(payments) || payments.length === 0) {
+      return [];
+    }
+    
+    return payments
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 3)
+      .map(payment => ({
+        id: payment._id?.slice(-6) || 'N/A',
+        amount: payment.amount || 0,
+        status: payment.status || 'unknown',
+        userName: getUserName(payment.userId)
+      }));
   };
 
   // CRUD for Users
@@ -346,26 +412,28 @@ function AdminDashboard() {
     await apiCall('PUT', `/payment/update-payment-status/${id}`, { status });
   };
 
-  // CRUD for Reviews
-  const createReview = async (e) => {
-    e.preventDefault();
-    await apiCall('POST', '/reviews/create-review', newReview);
-    setNewReview({ userId: '', remarks: '' });
-  };
+// CRUD for Reviews - FIXED
+const createReview = async (e) => {
+  e.preventDefault();
+  await apiCall('POST', '/reviews/create-review', newReview);
+  setNewReview({ userId: '', remarks: '' });
+};
 
-  const deleteReview = async (id) => {
-    if (window.confirm('Delete this review?')) {
-      await apiCall('DELETE', '/reviews/delete-review', { reviewId: id });
-    }
-  };
+const deleteReview = async (id) => {
+  if (window.confirm('Delete this review?')) {
+    // FIXED: Use the correct endpoint with review ID in URL
+    await apiCall('DELETE', `/reviews/delete-review/${id}`);
+  }
+};
 
-  // CRUD for Service Requests
+  // CRUD for Service Requests - FIXED
   const createServiceRequest = async (e) => {
     e.preventDefault();
     await apiCall('POST', '/service-requests/create', newServiceRequest);
-    setNewServiceRequest({ userId: '', roomNumber: '', serviceType: 'housekeeping', description: '', priority: 'normal', status: 'pending' });
+    setNewServiceRequest({ userId: '', roomNumber: '', serviceType: 'room_cleaning', description: '', priority: 'normal', status: 'pending' });
   };
 
+  // FIXED: Correct endpoint based on your routes
   const updateServiceStatus = async (id, status) => {
     await apiCall('PUT', `/service-requests/${id}/status`, { status });
   };
@@ -383,6 +451,8 @@ function AdminDashboard() {
     switch (activeTab) {
       case 'dashboard':
         const stats = calculateDashboardStats();
+        const latestBookings = getLatestBookings();
+        const latestPayments = getLatestPayments();
 
         return (
           <div style={styles.dashboard}>
@@ -405,24 +475,27 @@ function AdminDashboard() {
                 <small>Total: {bookings.length || 0}</small>
               </div>
               <div style={styles.statCard}>
-                <h4>Total Revenue</h4>
-                <p>${stats.totalRevenue.toFixed(2)}</p>
+                <h4>Total Cost</h4>
+                <p>${stats.totalCost.toFixed(2)}</p>
+                <small>All payments</small>
               </div>
             </div>
 
             <div style={styles.stats}>
               <div style={styles.statCard}>
-                <h4>Pending Payments</h4>
-                <p>{stats.pendingPayments}</p>
+                <h4>Revenue Earned</h4>
+                <p style={{ color: '#2e7d32', fontWeight: 'bold' }}>${stats.revenueEarned.toFixed(2)}</p>
+                <small>Completed payments</small>
               </div>
               <div style={styles.statCard}>
-                <h4>Service Requests</h4>
-                <p>{stats.pendingServiceRequests} pending</p>
-                <small>Total: {serviceRequests.length || 0}</small>
+                <h4>Pending Revenue</h4>
+                <p style={{ color: '#f57c00' }}>${stats.pendingRevenue.toFixed(2)}</p>
+                <small>Awaiting completion</small>
               </div>
               <div style={styles.statCard}>
-                <h4>Reviews</h4>
-                <p>{stats.totalReviews}</p>
+                <h4>Payments Status</h4>
+                <p>Completed: {stats.completedPayments}</p>
+                <small>Pending: {stats.pendingPayments}</small>
               </div>
               <div style={styles.statCard}>
                 <h4>Quick Actions</h4>
@@ -438,11 +511,48 @@ function AdminDashboard() {
               <div style={styles.activityList}>
                 <div style={styles.activityItem}>
                   <strong>Latest Bookings</strong>
-                  <p>{(Array.isArray(bookings) ? bookings.slice(0, 3).map(b => `#${b._id?.slice(-6)}`).join(', ') : 'No recent bookings') || 'No recent bookings'}</p>
+                  {latestBookings.length === 0 ? (
+                    <p>No recent bookings</p>
+                  ) : (
+                    latestBookings.map((booking, index) => (
+                      <div key={index} style={styles.activityListItem}>
+                        <span style={styles.activityText}>
+                          <strong>#{booking.id}</strong> - {booking.userName}
+                        </span>
+                        <span style={styles.activityMeta}>
+                          ${booking.price} • {booking.status}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
                 <div style={styles.activityItem}>
                   <strong>Recent Payments</strong>
-                  <p>{(Array.isArray(payments) ? payments.slice(0, 3).map(p => `$${p.amount}`).join(', ') : 'No recent payments') || 'No recent payments'}</p>
+                  {latestPayments.length === 0 ? (
+                    <p>No recent payments</p>
+                  ) : (
+                    latestPayments.map((payment, index) => (
+                      <div key={index} style={styles.activityListItem}>
+                        <span style={styles.activityText}>
+                          <strong>${payment.amount}</strong> - {payment.userName}
+                        </span>
+                        <span style={styles.activityMeta}>
+                          {payment.status}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div style={styles.activityItem}>
+                  <strong>Data Status</strong>
+                  <div style={styles.activityListItem}>
+                    <span style={styles.activityText}>Payments: {payments.length || 0}</span>
+                    <span style={styles.activityMeta}>Bookings: {bookings.length || 0}</span>
+                  </div>
+                  <div style={styles.activityListItem}>
+                    <span style={styles.activityText}>Users: {users.length || 0}</span>
+                    <span style={styles.activityMeta}>Rooms: {rooms.length || 0}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -565,45 +675,42 @@ function AdminDashboard() {
               </form>
             )}
 
-           
-           <div style={styles.listContainer}>
-  <h4>All Rooms {Array.isArray(rooms) ? rooms.length : 0}</h4>
-  {loading ? (
-    <div style={styles.loading}>Loading rooms...</div>
-  ) : !Array.isArray(rooms) ? (
-    <div style={styles.noData}>Error loading rooms</div>
-  ) : rooms.length === 0 ? (
-    <div style={styles.noData}>No rooms found</div>
-  ) : (
-    rooms.map(r => (
-      <div key={r._id} style={styles.itemCard}>
-        <div>
-          <strong>Room {r.roomNumber || 'N/A'}</strong>
-          <p>Type: {r.roomType || 'Not specified'}</p>
-          <p>Price: ${r.pricePerNight || '0'}/night</p>
-          <p>Status: {r.roomStatus || 'unknown'}</p>
-        </div>
-        <div style={styles.actionButtons}>
-          <button style={styles.editBtn} onClick={() => setEditingRoom({ ...r })}>Edit</button>
-          <select 
-            style={styles.statusSelect} 
-            value={r.roomStatus || 'available'} 
-            onChange={e => apiCall('PUT', `/room/update-room-status/${r._id}`, { status: e.target.value })}
-          >
-            <option value="available">Available</option>
-            <option value="occupied">Occupied</option>
-            <option value="booked">Booked</option>
-            <option value="under maintenance">Under Maintenance</option>
-            <option value="cleaning">Cleaning</option>
-          </select>
-          <button style={styles.deleteBtn} onClick={() => deleteRoom(r._id)}>Delete</button>
-        </div>
-      </div>
-    ))
-  )}
-</div>
-
-
+            <div style={styles.listContainer}>
+              <h4>All Rooms {Array.isArray(rooms) ? rooms.length : 0}</h4>
+              {loading ? (
+                <div style={styles.loading}>Loading rooms...</div>
+              ) : !Array.isArray(rooms) ? (
+                <div style={styles.noData}>Error loading rooms</div>
+              ) : rooms.length === 0 ? (
+                <div style={styles.noData}>No rooms found</div>
+              ) : (
+                rooms.map(r => (
+                  <div key={r._id} style={styles.itemCard}>
+                    <div>
+                      <strong>Room {r.roomNumber || 'N/A'}</strong>
+                      <p>Type: {r.roomType || 'Not specified'}</p>
+                      <p>Price: ${r.pricePerNight || '0'}/night</p>
+                      <p>Status: {r.roomStatus || 'unknown'}</p>
+                    </div>
+                    <div style={styles.actionButtons}>
+                      <button style={styles.editBtn} onClick={() => setEditingRoom({ ...r })}>Edit</button>
+                      <select 
+                        style={styles.statusSelect} 
+                        value={r.roomStatus || 'available'} 
+                        onChange={e => apiCall('PUT', `/room/update-room-status/${r._id}`, { status: e.target.value })}
+                      >
+                        <option value="available">Available</option>
+                        <option value="occupied">Occupied</option>
+                        <option value="booked">Booked</option>
+                        <option value="under maintenance">Under Maintenance</option>
+                        <option value="cleaning">Cleaning</option>
+                      </select>
+                      <button style={styles.deleteBtn} onClick={() => deleteRoom(r._id)}>Delete</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         );
 
@@ -638,11 +745,12 @@ function AdminDashboard() {
                     <div key={b._id} style={styles.itemCard}>
                       <div>
                         <strong>Booking #{b._id?.slice(-6)}</strong>
-                        <p>Guest: {b.guestId}</p>
+                        <p>Guest: {getUserName(b.guestId)}</p>
                         <p>Room: {b.roomId}</p>
                         <p>Check-in: {new Date(b.checkinDate).toLocaleDateString()}</p>
                         <p>Check-out: {new Date(b.checkoutDate).toLocaleDateString()}</p>
                         <p>Status: {b.bookingStatus}</p>
+                        <p>Amount: ${b.totalAmount || 'N/A'}</p>
                       </div>
                       <div>
                         <select style={styles.statusSelect} value={b.bookingStatus} onChange={e => updateBookingStatus(b._id, e.target.value)}>
@@ -700,8 +808,8 @@ function AdminDashboard() {
                         <p>Amount: ${p.amount}</p>
                         <p>Method: {p.paymentMethod}</p>
                         <p>Status: {p.status}</p>
-                        <p>User: {p.userId}</p>
-                        <p>Booking: {p.bookingId}</p>
+                        <p>User: {getUserName(p.userId)}</p>
+                        <p>Booking: {getBookingId(p.bookingId)}</p>
                       </div>
                       <div>
                         <select style={styles.statusSelect} value={p.status} onChange={e => updatePaymentStatus(p._id, e.target.value)}>
@@ -740,7 +848,7 @@ function AdminDashboard() {
                     <div key={r._id} style={styles.itemCard}>
                       <div>
                         <strong>Review #{r._id?.slice(-6)}</strong>
-                        <p>User: {r.userId}</p>
+                        <p>User: {getUserName(r.userId)}</p>
                         <p>{r.remarks}</p>
                         <small>Date: {new Date(r.createdAt).toLocaleDateString()}</small>
                       </div>
@@ -764,12 +872,15 @@ function AdminDashboard() {
               <input style={styles.input} placeholder="User ID" value={newServiceRequest.userId} onChange={e => setNewServiceRequest({ ...newServiceRequest, userId: e.target.value })} required />
               <input style={styles.input} placeholder="Room Number" value={newServiceRequest.roomNumber} onChange={e => setNewServiceRequest({ ...newServiceRequest, roomNumber: e.target.value })} required />
               <select style={styles.input} value={newServiceRequest.serviceType} onChange={e => setNewServiceRequest({ ...newServiceRequest, serviceType: e.target.value })}>
-                <option value="housekeeping">Housekeeping</option>
-                <option value="room_service">Room Service</option>
-                <option value="laundry">Laundry</option>
-                <option value="maintenance">Maintenance</option>
                 <option value="room_cleaning">Room Cleaning</option>
                 <option value="food_service">Food Service</option>
+                <option value="laundry">Laundry</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="wakeup_call">Wakeup Call</option>
+                <option value="transport">Transport</option>
+                <option value="housekeeping">Housekeeping</option>
+                <option value="room_service">Room Service</option>
+                <option value="other">Other</option>
               </select>
               <textarea style={styles.textarea} placeholder="Description" value={newServiceRequest.description} onChange={e => setNewServiceRequest({ ...newServiceRequest, description: e.target.value })} required />
               <select style={styles.input} value={newServiceRequest.priority} onChange={e => setNewServiceRequest({ ...newServiceRequest, priority: e.target.value })}>
@@ -789,14 +900,20 @@ function AdminDashboard() {
                   serviceRequests.map(sr => (
                     <div key={sr._id} style={styles.itemCard}>
                       <div>
-                        <strong>{sr.serviceType}</strong>
-                        <p>Room: {sr.roomNumber}</p>
-                        <p>{sr.description}</p>
-                        <p>Priority: {sr.priority}</p>
-                        <p>Status: {sr.status}</p>
+                        <strong>{sr.serviceType || 'Unknown Service'}</strong>
+                        <p>Room: {sr.roomNumber || 'N/A'}</p>
+                        <p>{sr.description || 'No description'}</p>
+                        <p>Priority: {sr.priority || 'normal'}</p>
+                        <p>Status: {sr.status || 'pending'}</p>
+                        <p>User: {getUserName(sr.userId)}</p>
+                        <small>Created: {sr.createdAt ? new Date(sr.createdAt).toLocaleDateString() : 'N/A'}</small>
                       </div>
                       <div>
-                        <select style={styles.statusSelect} value={sr.status} onChange={e => updateServiceStatus(sr._id, e.target.value)}>
+                        <select 
+                          style={styles.statusSelect} 
+                          value={sr.status || 'pending'} 
+                          onChange={e => updateServiceStatus(sr._id, e.target.value)}
+                        >
                           <option value="pending">Pending</option>
                           <option value="in_progress">In Progress</option>
                           <option value="completed">Completed</option>
@@ -997,6 +1114,24 @@ const styles = {
     borderRadius: '6px',
     border: '1px solid #dee2e6'
   },
+  activityListItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: '1px solid #f0f0f0'
+  },
+  activityText: {
+    fontSize: '14px',
+    color: '#333'
+  },
+  activityMeta: {
+    fontSize: '12px',
+    color: '#666',
+    backgroundColor: '#f5f5f5',
+    padding: '2px 6px',
+    borderRadius: '3px'
+  },
   refreshBtn: {
     padding: '8px 15px',
     backgroundColor: '#3498db',
@@ -1115,6 +1250,5 @@ const styles = {
     backgroundColor: 'white'
   }
 };
-
 
 export default AdminDashboard;

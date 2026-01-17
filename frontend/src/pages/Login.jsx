@@ -9,6 +9,15 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+    general: ''
+  });
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false
+  });
   const navigate = useNavigate();
 
   const customStyles = {
@@ -38,6 +47,103 @@ function Login() {
     }
   };
 
+  // Validation rules
+  const validationRules = {
+    email: {
+      required: 'Email is required',
+      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: 'Please enter a valid email address',
+      maxLength: 100,
+      maxLengthMessage: 'Email cannot exceed 100 characters'
+    },
+    password: {
+      required: 'Password is required',
+      minLength: 6,
+      minLengthMessage: 'Password must be at least 6 characters',
+      maxLength: 50,
+      maxLengthMessage: 'Password cannot exceed 50 characters',
+      patternMessage: 'Password should contain letters and numbers'
+    }
+  };
+
+  // Validate individual field
+  const validateField = (name, value) => {
+    const rules = validationRules[name];
+    let error = '';
+
+    if (!value.trim()) {
+      error = rules.required;
+    } else if (rules.pattern && !rules.pattern.test(value)) {
+      error = rules.message || rules.patternMessage;
+    } else if (rules.minLength && value.length < rules.minLength) {
+      error = rules.minLengthMessage;
+    } else if (rules.maxLength && value.length > rules.maxLength) {
+      error = rules.maxLengthMessage;
+    }
+
+    return error;
+  };
+
+  // Validate all fields
+  const validateForm = () => {
+    const newErrors = {
+      email: validateField('email', email),
+      password: validateField('password', password),
+      general: ''
+    };
+
+    setErrors(newErrors);
+    return !newErrors.email && !newErrors.password;
+  };
+
+  // Handle blur event
+  const handleBlur = (field) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, field === 'email' ? email : password);
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  // Handle input change with validation
+  const handleInputChange = (field, value) => {
+    if (field === 'email') {
+      setEmail(value);
+      // Clear email error when user starts typing
+      if (touched.email && errors.email) {
+        const error = validateField('email', value);
+        setErrors(prev => ({ ...prev, email: error }));
+      }
+    } else if (field === 'password') {
+      setPassword(value);
+      // Clear password error when user starts typing
+      if (touched.password && errors.password) {
+        const error = validateField('password', value);
+        setErrors(prev => ({ ...prev, password: error }));
+      }
+    }
+  };
+
+  // Real-time validation for email on type
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setEmail(value);
+    
+    if (touched.email) {
+      const error = validateField('email', value);
+      setErrors(prev => ({ ...prev, email: error }));
+    }
+  };
+
+  // Real-time validation for password on type
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    
+    if (touched.password) {
+      const error = validateField('password', value);
+      setErrors(prev => ({ ...prev, password: error }));
+    }
+  };
+
   // Check if user is already logged in on component mount
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -53,7 +159,7 @@ function Login() {
         localStorage.clear(); // Clear invalid data
       }
     }
-  }, [navigate]); // Add navigate to dependency array
+  }, [navigate]);
 
   const redirectToDashboard = (role) => {
     switch (role) {
@@ -80,12 +186,26 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Mark all fields as touched
+    setTouched({
+      email: true,
+      password: true
+    });
+    
+    // Validate form
+    if (!validateForm()) {
+      setMessage('Please fix the errors in the form');
+      return;
+    }
+    
     setLoading(true);
     setMessage('');
+    setErrors(prev => ({ ...prev, general: '' }));
 
     try {
       const response = await axios.post('http://localhost:5000/api/login', {
-        email: email,
+        email: email.trim(),
         password: password
       });
 
@@ -101,10 +221,20 @@ function Login() {
       }, 1000);
 
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Login failed. Please check your credentials.');
+      const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      setMessage(errorMessage);
+      setErrors(prev => ({ ...prev, general: errorMessage }));
+      
+      // Clear password field on failed login attempt
+      setPassword('');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check if form is valid (for button styling)
+  const isFormValid = () => {
+    return email.trim() && password.trim() && !errors.email && !errors.password;
   };
 
   return (
@@ -161,7 +291,7 @@ function Login() {
               </h2>
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: customStyles.navy[800] }}>
@@ -169,19 +299,32 @@ function Login() {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaEnvelope className="text-gray-400" />
+                    <FaEnvelope className={`${errors.email && touched.email ? 'text-red-500' : 'text-gray-400'}`} />
                   </div>
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors duration-300"
+                    onChange={handleEmailChange}
+                    onBlur={() => handleBlur('email')}
+                    className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors duration-300 ${
+                      errors.email && touched.email 
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:border-gold-500 focus:ring-gold-500'
+                    }`}
                     style={{ color: customStyles.navy[900] }}
-                    required
                     placeholder="name@example.com"
                     disabled={loading}
+                    autoComplete="email"
                   />
                 </div>
+                {errors.email && touched.email && (
+                  <p className="mt-1 text-xs text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.email}
+                  </p>
+                )}
               </div>
               
               {/* Password Field */}
@@ -194,35 +337,53 @@ function Login() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="text-xs text-gray-500 hover:text-gold-600 transition-colors duration-300"
+                    disabled={loading}
                   >
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaLock className="text-gray-400" />
+                    <FaLock className={`${errors.password && touched.password ? 'text-red-500' : 'text-gray-400'}`} />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors duration-300"
+                    onChange={handlePasswordChange}
+                    onBlur={() => handleBlur('password')}
+                    className={`w-full pl-12 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors duration-300 ${
+                      errors.password && touched.password 
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:border-gold-500 focus:ring-gold-500'
+                    }`}
                     style={{ color: customStyles.navy[900] }}
-                    required
                     placeholder="••••••••"
                     disabled={loading}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                    disabled={loading}
                   >
                     {showPassword ? (
-                      <FaEyeSlash className="text-gray-400 hover:text-gray-600" />
+                      <FaEyeSlash className={`${errors.password && touched.password ? 'text-red-400 hover:text-red-600' : 'text-gray-400 hover:text-gray-600'}`} />
                     ) : (
-                      <FaEye className="text-gray-400 hover:text-gray-600" />
+                      <FaEye className={`${errors.password && touched.password ? 'text-red-400 hover:text-red-600' : 'text-gray-400 hover:text-gray-600'}`} />
                     )}
                   </button>
+                </div>
+                {errors.password && touched.password && (
+                  <p className="mt-1 text-xs text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.password}
+                  </p>
+                )}
+                <div className="mt-2 text-xs text-gray-500">
+                  Password must be at least 6 characters with letters and numbers
                 </div>
               </div>
               
@@ -233,6 +394,7 @@ function Login() {
                     type="checkbox"
                     id="remember"
                     className="w-4 h-4 rounded border-gray-300 focus:ring-gold-500 text-gold-600"
+                    disabled={loading}
                   />
                   <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
                     Remember me
@@ -252,14 +414,26 @@ function Login() {
               {/* Submit Button */}
               <button 
                 type="submit" 
-                className="group w-full px-6 py-4 text-sm font-medium tracking-wider uppercase rounded-lg transition-all duration-300 transform hover:scale-105 relative overflow-hidden hover:shadow-xl"
+                className={`group w-full px-6 py-4 text-sm font-medium tracking-wider uppercase rounded-lg transition-all duration-300 transform relative overflow-hidden hover:shadow-xl ${
+                  !isFormValid() || loading 
+                    ? 'opacity-70 cursor-not-allowed' 
+                    : 'hover:scale-105'
+                }`}
                 style={{ 
-                  backgroundColor: customStyles.gold[600],
+                  backgroundColor: isFormValid() && !loading ? customStyles.gold[600] : customStyles.gold[400],
                   color: 'white'
                 }}
-                disabled={loading}
-                onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = customStyles.gold[700])}
-                onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = customStyles.gold[600])}
+                disabled={!isFormValid() || loading}
+                onMouseEnter={(e) => {
+                  if (isFormValid() && !loading) {
+                    e.currentTarget.style.backgroundColor = customStyles.gold[700];
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isFormValid() && !loading) {
+                    e.currentTarget.style.backgroundColor = customStyles.gold[600];
+                  }
+                }}
               >
                 <span className="relative z-10 flex items-center justify-center">
                   {loading ? (
@@ -277,18 +451,24 @@ function Login() {
                     </>
                   )}
                 </span>
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{
-                    background: `linear-gradient(to right, ${customStyles.gold[700]}, ${customStyles.gold[800]})`
-                  }}
-                ></div>
+                {isFormValid() && !loading && (
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{
+                      background: `linear-gradient(to right, ${customStyles.gold[700]}, ${customStyles.gold[800]})`
+                    }}
+                  ></div>
+                )}
               </button>
             </form>
             
             {/* Message Display */}
             {message && (
-              <div className={`mt-6 p-4 rounded-lg text-sm font-medium ${message.includes('successful') ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+              <div className={`mt-6 p-4 rounded-lg text-sm font-medium ${
+                message.includes('successful') 
+                  ? 'bg-green-50 border border-green-200 text-green-700' 
+                  : 'bg-red-50 border border-red-200 text-red-700'
+              }`}>
                 <div className="flex items-center">
                   {message.includes('successful') ? (
                     <svg className="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

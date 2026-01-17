@@ -17,6 +17,21 @@ function Register() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({
+    fullName: '',
+    username: '',
+    phone: '',
+    email: '',
+    password: '',
+    general: ''
+  });
+  const [touched, setTouched] = useState({
+    fullName: false,
+    username: false,
+    phone: false,
+    email: false,
+    password: false
+  });
 
   const customStyles = {
     navy: {
@@ -45,24 +60,162 @@ function Register() {
     }
   };
 
+  // Validation rules
+  const validationRules = {
+    fullName: {
+      required: 'Full name is required',
+      minLength: 2,
+      minLengthMessage: 'Full name must be at least 2 characters',
+      maxLength: 100,
+      maxLengthMessage: 'Full name cannot exceed 100 characters',
+      pattern: /^[a-zA-Z\s.'-]+$/,
+      patternMessage: 'Full name can only contain letters, spaces, apostrophes, dots, and hyphens'
+    },
+    username: {
+      required: 'Username is required',
+      minLength: 3,
+      minLengthMessage: 'Username must be at least 3 characters',
+      maxLength: 30,
+      maxLengthMessage: 'Username cannot exceed 30 characters',
+      pattern: /^[a-zA-Z0-9_]+$/,
+      patternMessage: 'Username can only contain letters, numbers, and underscores'
+    },
+    email: {
+      required: 'Email is required',
+      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: 'Please enter a valid email address',
+      maxLength: 100,
+      maxLengthMessage: 'Email cannot exceed 100 characters'
+    },
+    phone: {
+      required: 'Phone number is required',
+      pattern: /^[\+]?[1-9][\d]{0,15}$/,
+      message: 'Please enter a valid phone number',
+      maxLength: 15,
+      maxLengthMessage: 'Phone number cannot exceed 15 digits'
+    },
+    password: {
+      required: 'Password is required',
+      minLength: 8,
+      minLengthMessage: 'Password must be at least 8 characters',
+      maxLength: 50,
+      maxLengthMessage: 'Password cannot exceed 50 characters',
+      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+      patternMessage: 'Password must contain uppercase, lowercase, number, and special character'
+    }
+  };
+
+  // Validate individual field
+  const validateField = (name, value) => {
+    const rules = validationRules[name];
+    if (!rules) return '';
+    
+    let error = '';
+
+    if (!value.trim()) {
+      error = rules.required;
+    } else if (rules.pattern && !rules.pattern.test(value)) {
+      error = rules.message || rules.patternMessage;
+    } else if (rules.minLength && value.length < rules.minLength) {
+      error = rules.minLengthMessage;
+    } else if (rules.maxLength && value.length > rules.maxLength) {
+      error = rules.maxLengthMessage;
+    }
+
+    return error;
+  };
+
+  // Validate all fields
+  const validateForm = () => {
+    const newErrors = {
+      fullName: validateField('fullName', formData.fullName),
+      username: validateField('username', formData.username),
+      email: validateField('email', formData.email),
+      phone: validateField('phone', formData.phone),
+      password: validateField('password', formData.password),
+      general: ''
+    };
+
+    setErrors(newErrors);
+    return !newErrors.fullName && !newErrors.username && !newErrors.email && 
+           !newErrors.phone && !newErrors.password;
+  };
+
+  // Handle blur event
+  const handleBlur = (field) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, formData[field]);
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  // Handle input change with validation
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Clear error when user starts typing
+    if (touched[name] && errors[name]) {
+      const error = validateField(name, value);
+      setErrors(prev => ({ ...prev, [name]: error }));
+    }
+  };
+
+  // Real-time validation for password strength
+  const getPasswordStrength = (password) => {
+    if (!password) return { strength: 0, text: '', color: '' };
+    
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[@$!%*?&]/.test(password)) strength++;
+    
+    const strengthData = {
+      0: { text: 'Very Weak', color: 'text-red-500' },
+      1: { text: 'Weak', color: 'text-red-400' },
+      2: { text: 'Fair', color: 'text-yellow-500' },
+      3: { text: 'Good', color: 'text-green-400' },
+      4: { text: 'Strong', color: 'text-green-500' },
+      5: { text: 'Very Strong', color: 'text-green-600' }
+    };
+    
+    return { strength, ...strengthData[Math.min(strength, 5)] };
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Mark all fields as touched
+    setTouched({
+      fullName: true,
+      username: true,
+      email: true,
+      phone: true,
+      password: true
+    });
+    
+    // Validate form
+    if (!validateForm()) {
+      setError('Please fix the errors in the form');
+      return;
+    }
+    
     setLoading(true);
     setError('');
     setSuccess('');
+    setErrors(prev => ({ ...prev, general: '' }));
 
     try {
       const response = await axios.post('http://localhost:5000/api/register', formData);
       
       if (response.status === 201) {
         setSuccess('Registration successful! You will be redirected to login shortly.');
+        
         // Reset form
         setFormData({
           fullName: '',
@@ -71,6 +224,23 @@ function Register() {
           email: '',
           password: '',
           role: 'guest'
+        });
+        
+        // Reset errors and touched
+        setErrors({
+          fullName: '',
+          username: '',
+          phone: '',
+          email: '',
+          password: '',
+          general: ''
+        });
+        setTouched({
+          fullName: false,
+          username: false,
+          phone: false,
+          email: false,
+          password: false
         });
         
         // Store token if needed
@@ -84,11 +254,29 @@ function Register() {
         }, 3000);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Registration failed. Please try again.';
+      setError(errorMessage);
+      setErrors(prev => ({ ...prev, general: errorMessage }));
     } finally {
       setLoading(false);
     }
   };
+
+  // Check if form is valid
+  const isFormValid = () => {
+    return formData.fullName.trim() && 
+           formData.username.trim() && 
+           formData.email.trim() && 
+           formData.phone.trim() && 
+           formData.password.trim() && 
+           !errors.fullName && 
+           !errors.username && 
+           !errors.email && 
+           !errors.phone && 
+           !errors.password;
+  };
+
+  const passwordStrength = getPasswordStrength(formData.password);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center px-4 py-12">
@@ -104,7 +292,7 @@ function Register() {
         ></div>
       </div>
       
-      <div className="relative w-full max-w-4xl">
+      <div className="relative w-full max-w-5xl" style={{ minHeight: '800px' }}>
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6"
@@ -125,10 +313,10 @@ function Register() {
         </div>
         
         {/* Registration Form Container */}
-        <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
-          <div className="grid grid-cols-1 lg:grid-cols-2">
+        <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200" style={{ height: 'auto', minHeight: '700px' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 h-full">
             {/* Left Column - Form */}
-            <div className="p-6 sm:p-8 lg:p-10">
+            <div className="p-6 sm:p-8 lg:p-10 overflow-y-auto" style={{ maxHeight: '700px' }}>
               <div className="mb-6">
                 <div className="flex items-center gap-3 mb-2">
                   <FaUser className="text-lg" style={{ color: customStyles.gold[600] }} />
@@ -147,13 +335,13 @@ function Register() {
               </div>
               
               {/* Messages */}
-              {error && (
+              {(error || errors.general) && (
                 <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
                   <div className="flex items-center">
                     <svg className="w-5 h-5 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {error}
+                    {error || errors.general}
                   </div>
                 </div>
               )}
@@ -169,7 +357,7 @@ function Register() {
                 </div>
               )}
               
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Full Name */}
                   <div>
@@ -178,20 +366,32 @@ function Register() {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <FaUser className="text-gray-400" />
+                        <FaUser className={`${errors.fullName && touched.fullName ? 'text-red-500' : 'text-gray-400'}`} />
                       </div>
                       <input
                         type="text"
                         name="fullName"
                         value={formData.fullName}
                         onChange={handleChange}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors duration-300"
+                        onBlur={() => handleBlur('fullName')}
+                        className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors duration-300 ${
+                          errors.fullName && touched.fullName 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                            : 'border-gray-300 focus:border-gold-500 focus:ring-gold-500'
+                        }`}
                         style={{ color: customStyles.navy[900] }}
-                        required
                         placeholder="John Doe"
                         disabled={loading}
                       />
                     </div>
+                    {errors.fullName && touched.fullName && (
+                      <p className="mt-1 text-xs text-red-600 flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        {errors.fullName}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Username */}
@@ -201,20 +401,32 @@ function Register() {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <FaUserTag className="text-gray-400" />
+                        <FaUserTag className={`${errors.username && touched.username ? 'text-red-500' : 'text-gray-400'}`} />
                       </div>
                       <input
                         type="text"
                         name="username"
                         value={formData.username}
                         onChange={handleChange}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors duration-300"
+                        onBlur={() => handleBlur('username')}
+                        className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors duration-300 ${
+                          errors.username && touched.username 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                            : 'border-gray-300 focus:border-gold-500 focus:ring-gold-500'
+                        }`}
                         style={{ color: customStyles.navy[900] }}
-                        required
                         placeholder="johndoe"
                         disabled={loading}
                       />
                     </div>
+                    {errors.username && touched.username && (
+                      <p className="mt-1 text-xs text-red-600 flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        {errors.username}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Email */}
@@ -224,20 +436,32 @@ function Register() {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <FaEnvelope className="text-gray-400" />
+                        <FaEnvelope className={`${errors.email && touched.email ? 'text-red-500' : 'text-gray-400'}`} />
                       </div>
                       <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors duration-300"
+                        onBlur={() => handleBlur('email')}
+                        className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors duration-300 ${
+                          errors.email && touched.email 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                            : 'border-gray-300 focus:border-gold-500 focus:ring-gold-500'
+                        }`}
                         style={{ color: customStyles.navy[900] }}
-                        required
                         placeholder="name@example.com"
                         disabled={loading}
                       />
                     </div>
+                    {errors.email && touched.email && (
+                      <p className="mt-1 text-xs text-red-600 flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        {errors.email}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Phone */}
@@ -247,20 +471,32 @@ function Register() {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <FaPhone className="text-gray-400" />
+                        <FaPhone className={`${errors.phone && touched.phone ? 'text-red-500' : 'text-gray-400'}`} />
                       </div>
                       <input
                         type="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors duration-300"
+                        onBlur={() => handleBlur('phone')}
+                        className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors duration-300 ${
+                          errors.phone && touched.phone 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                            : 'border-gray-300 focus:border-gold-500 focus:ring-gold-500'
+                        }`}
                         style={{ color: customStyles.navy[900] }}
-                        required
-                        placeholder="+1 234 567 8900"
+                        placeholder="+12345678900"
                         disabled={loading}
                       />
                     </div>
+                    {errors.phone && touched.phone && (
+                      <p className="mt-1 text-xs text-red-600 flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        {errors.phone}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Password */}
@@ -273,22 +509,27 @@ function Register() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="text-xs text-gray-500 hover:text-gold-600 transition-colors duration-300"
+                        disabled={loading}
                       >
                         {showPassword ? 'Hide' : 'Show'}
                       </button>
                     </div>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <FaLock className="text-gray-400" />
+                        <FaLock className={`${errors.password && touched.password ? 'text-red-500' : 'text-gray-400'}`} />
                       </div>
                       <input
                         type={showPassword ? "text" : "password"}
                         name="password"
                         value={formData.password}
                         onChange={handleChange}
-                        className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors duration-300"
+                        onBlur={() => handleBlur('password')}
+                        className={`w-full pl-12 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors duration-300 ${
+                          errors.password && touched.password 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                            : 'border-gray-300 focus:border-gold-500 focus:ring-gold-500'
+                        }`}
                         style={{ color: customStyles.navy[900] }}
-                        required
                         placeholder="••••••••"
                         disabled={loading}
                       />
@@ -296,17 +537,112 @@ function Register() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                        disabled={loading}
                       >
                         {showPassword ? (
-                          <FaEyeSlash className="text-gray-400 hover:text-gray-600" />
+                          <FaEyeSlash className={`${errors.password && touched.password ? 'text-red-400 hover:text-red-600' : 'text-gray-400 hover:text-gray-600'}`} />
                         ) : (
-                          <FaEye className="text-gray-400 hover:text-gray-600" />
+                          <FaEye className={`${errors.password && touched.password ? 'text-red-400 hover:text-red-600' : 'text-gray-400 hover:text-gray-600'}`} />
                         )}
                       </button>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">
-                      Use 8 or more characters with a mix of letters, numbers & symbols
-                    </p>
+                    
+                    {/* Password Strength Indicator */}
+                    {formData.password && (
+                      <div className="mt-3">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className={`text-xs font-medium ${passwordStrength.color}`}>
+                            {passwordStrength.text}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {formData.password.length}/50
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div 
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                              passwordStrength.strength <= 2 ? 'bg-red-500' :
+                              passwordStrength.strength === 3 ? 'bg-yellow-500' :
+                              'bg-green-500'
+                            }`}
+                            style={{ width: `${(passwordStrength.strength / 5) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Password Requirements */}
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className={`text-xs flex items-center ${/^.{8,}$/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
+                        {/^.{8,}$/.test(formData.password) ? (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        8+ characters
+                      </div>
+                      <div className={`text-xs flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
+                        {/[a-z]/.test(formData.password) ? (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        Lowercase letter
+                      </div>
+                      <div className={`text-xs flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
+                        {/[A-Z]/.test(formData.password) ? (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        Uppercase letter
+                      </div>
+                      <div className={`text-xs flex items-center ${/\d/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
+                        {/\d/.test(formData.password) ? (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        Number
+                      </div>
+                      <div className={`text-xs flex items-center ${/[@$!%*?&]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
+                        {/[@$!%*?&]/.test(formData.password) ? (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        Special character
+                      </div>
+                    </div>
+                    
+                    {errors.password && touched.password && (
+                      <p className="mt-1 text-xs text-red-600 flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        {errors.password}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Role - Enhanced Dropdown */}
@@ -484,154 +820,6 @@ function Register() {
                           </p>
                         </div>
                       </div>
-                      
-                      {/* Role Permissions */}
-                      <div className="grid grid-cols-2 gap-2 mt-3">
-                        {formData.role === 'guest' && (
-                          <>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Make Reservations
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              View Bookings
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Access Offers
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              Staff Tools
-                            </span>
-                          </>
-                        )}
-                        
-                        {formData.role === 'receptionist' && (
-                          <>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Guest Check-in/out
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Room Management
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Billing System
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              Financial Reports
-                            </span>
-                          </>
-                        )}
-                        
-                        {formData.role === 'manager' && (
-                          <>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              All Hotel Access
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Staff Management
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Financial Reports
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              System Settings
-                            </span>
-                          </>
-                        )}
-                        
-                        {formData.role === 'admin' && (
-                          <>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Full System Access
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              User Management
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              System Settings
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              All Operations
-                            </span>
-                          </>
-                        )}
-                        
-                        {formData.role === 'staff' && (
-                          <>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Assigned Duties
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                              Guest Service Tools
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              Financial Access
-                            </span>
-                            <span className="text-xs text-gray-600 flex items-center">
-                              <svg className="w-3 h-3 mr-1.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              Management Tools
-                            </span>
-                          </>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -643,6 +831,7 @@ function Register() {
                     id="terms"
                     required
                     className="w-4 h-4 mt-1 rounded border-gray-300 focus:ring-gold-500 text-gold-600"
+                    disabled={loading}
                   />
                   <label htmlFor="terms" className="ml-3 text-sm text-gray-600">
                     I agree to the{' '}
@@ -659,14 +848,26 @@ function Register() {
                 {/* Submit Button */}
                 <button 
                   type="submit" 
-                  className="group w-full px-6 py-4 text-sm font-medium tracking-wider uppercase rounded-lg transition-all duration-300 transform hover:scale-105 relative overflow-hidden hover:shadow-xl"
+                  className={`group w-full px-6 py-4 text-sm font-medium tracking-wider uppercase rounded-lg transition-all duration-300 transform relative overflow-hidden hover:shadow-xl ${
+                    !isFormValid() || loading 
+                      ? 'opacity-70 cursor-not-allowed' 
+                      : 'hover:scale-105'
+                  }`}
                   style={{ 
-                    backgroundColor: customStyles.gold[600],
+                    backgroundColor: isFormValid() && !loading ? customStyles.gold[600] : customStyles.gold[400],
                     color: 'white'
                   }}
-                  disabled={loading}
-                  onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = customStyles.gold[700])}
-                  onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = customStyles.gold[600])}
+                  disabled={!isFormValid() || loading}
+                  onMouseEnter={(e) => {
+                    if (isFormValid() && !loading) {
+                      e.currentTarget.style.backgroundColor = customStyles.gold[700];
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (isFormValid() && !loading) {
+                      e.currentTarget.style.backgroundColor = customStyles.gold[600];
+                    }
+                  }}
                 >
                   <span className="relative z-10 flex items-center justify-center">
                     {loading ? (
@@ -684,12 +885,14 @@ function Register() {
                       </>
                     )}
                   </span>
-                  <div 
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{
-                      background: `linear-gradient(to right, ${customStyles.gold[700]}, ${customStyles.gold[800]})`
-                    }}
-                  ></div>
+                  {isFormValid() && !loading && (
+                    <div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{
+                        background: `linear-gradient(to right, ${customStyles.gold[700]}, ${customStyles.gold[800]})`
+                      }}
+                    ></div>
+                  )}
                 </button>
               </form>
               
@@ -713,8 +916,8 @@ function Register() {
             
             {/* Right Column - Info & Benefits */}
             <div 
-              className="p-6 sm:p-8 lg:p-10 hidden lg:block"
-              style={{ backgroundColor: customStyles.navy[900] }}
+              className="p-6 sm:p-8 lg:p-10 hidden lg:block overflow-y-auto"
+              style={{ backgroundColor: customStyles.navy[900], maxHeight: '700px' }}
             >
               <div className="h-full flex flex-col justify-center">
                 <div className="mb-8">

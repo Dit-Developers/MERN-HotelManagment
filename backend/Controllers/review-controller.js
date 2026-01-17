@@ -41,22 +41,32 @@ const getAllReviews = async (req, res) => {
 
 // Delete A Review API
 
+// Delete A Review API - FIXED
 const deleteReview = async (req, res) => {
     try {
-        const reviewId = req.params.revId;
+        // Get reviewId from URL params
+        const { reviewId } = req.params;
+        
+        if (!reviewId) {
+            return res.status(400).json({ message: "Review ID is required" });
+        }
+        
         const findReview = await reviewModel.findById(reviewId);
-        if (!findReview) { return res.status(404).json({ message: "No review found to delete" }); }
+        if (!findReview) { 
+            return res.status(404).json({ message: "No review found to delete" }); 
+        }
 
         const deleteReview = await reviewModel.findByIdAndDelete(reviewId);
-        if (!deleteReview) { return res.status(404).json({ message: "Error while deleting review" }); }
+        if (!deleteReview) { 
+            return res.status(404).json({ message: "Error while deleting review" }); 
+        }
 
-        return res.status(204).json({ message: "Review deleted!" });
+        return res.status(200).json({ message: "Review deleted successfully!" });
     } catch (error) {
         console.error("Internal server error", error);
-        return res.status(404).json({ message: "Internal server error", error });
+        return res.status(500).json({ message: "Internal server error", error: error.message });
     }
 }
-
 
 // GET A USERS REVIEWS - GET API
 
