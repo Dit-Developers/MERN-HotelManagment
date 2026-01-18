@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaUser, FaHotel, FaShieldAlt, FaArrowRight, FaEye, FaEyeSlash } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import { API_URL } from '../config/api';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -185,7 +186,7 @@ function Login() {
     setErrors(prev => ({ ...prev, general: '' }));
 
     try {
-      const response = await axios.post('http://localhost:5001/api/login', {
+      const response = await axios.post(`${API_URL}/login`, {
         email: email.trim(),
         password: password
       });

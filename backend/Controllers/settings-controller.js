@@ -73,4 +73,20 @@ const getContactMessages = async (req, res) => {
   }
 };
 
-module.exports = { getSettings, updateSettings, submitContactMessage, getContactMessages };
+const deleteContactMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await ContactMessageModel.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Contact message not found" });
+    }
+
+    return res.status(200).json({ message: "Contact message deleted successfully" });
+  } catch (error) {
+    console.error("Delete contact message error", error);
+    return res.status(500).json({ message: "Server error", error });
+  }
+};
+
+module.exports = { getSettings, updateSettings, submitContactMessage, getContactMessages, deleteContactMessage };

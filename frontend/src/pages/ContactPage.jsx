@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaPaperPlane, FaCheckCircle, FaBuilding, FaCalendarAlt, FaUserTie, FaQuestionCircle, FaCar, FaPaw, FaUtensils, FaParking, FaWifi, FaConciergeBell } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import { API_URL } from '../config/api';
 
 function ContactPage() {
-  const API_URL = 'http://localhost:5001/api';
-
   const [formData, setFormData] = useState({
     name: '',
     email: '',

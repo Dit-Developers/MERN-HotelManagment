@@ -29,6 +29,7 @@ import {
   FaArrowDown
 } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import { API_URL } from '../config/api';
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -103,9 +104,13 @@ function AdminDashboard() {
   const [editingUser, setEditingUser] = useState(null);
   const [editingRoom, setEditingRoom] = useState(null);
   const [selectedGuest, setSelectedGuest] = useState(null);
-
+  const [confirmState, setConfirmState] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
   const [user] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
-  const API_URL = 'http://localhost:5001/api';
   const token = localStorage.getItem('token');
 
   // Custom color styles matching HomePage
@@ -401,11 +406,19 @@ function AdminDashboard() {
       setReviews(Array.isArray(reviewsData?.getReviews) ? reviewsData.getReviews :
         Array.isArray(reviewsData) ? reviewsData : []);
 
-      // Fetch service requests
       const servicesRes = await fetch(`${API_URL}/service-requests`, { headers });
       const servicesData = await servicesRes.json();
       setServiceRequests(Array.isArray(servicesData?.serviceRequests) ? servicesData.serviceRequests :
         Array.isArray(servicesData) ? servicesData : []);
+
+      const contactRes = await fetch(`${API_URL}/contact-messages`, { headers });
+      const contactData = await contactRes.json();
+      const messagesArray = Array.isArray(contactData?.messages)
+        ? contactData.messages
+        : Array.isArray(contactData)
+        ? contactData
+        : [];
+      setContactMessages(messagesArray);
 
       const settingsRes = await fetch(`${API_URL}/settings`, { headers });
       const settingsData = await settingsRes.json();
@@ -433,7 +446,7 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, token]);
+  }, [token]);
 
   const fetchTabData = useCallback(async (tab) => {
     setLoading(true);
@@ -531,7 +544,7 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, token]);
+  }, [token]);
 
   // Clear messages
   useEffect(() => {
@@ -907,10 +920,15 @@ function AdminDashboard() {
     setEditingUser(null);
   };
 
-  const deleteUser = async (id) => {
-    if (window.confirm('Delete this user?')) {
-      await apiCall('DELETE', `/delete-user/${id}`);
-    }
+  const deleteUser = (id) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Delete User',
+      message: 'Are you sure you want to delete this user?',
+      onConfirm: async () => {
+        await apiCall('DELETE', `/delete-user/${id}`);
+      }
+    });
   };
 
   // CRUD for Rooms
@@ -932,10 +950,15 @@ function AdminDashboard() {
     setEditingRoom(null);
   };
 
-  const deleteRoom = async (id) => {
-    if (window.confirm('Delete this room?')) {
-      await apiCall('DELETE', `/room/delete-room/${id}`);
-    }
+  const deleteRoom = (id) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Delete Room',
+      message: 'Are you sure you want to delete this room?',
+      onConfirm: async () => {
+        await apiCall('DELETE', `/room/delete-room/${id}`);
+      }
+    });
   };
 
   // CRUD for Bookings
@@ -976,10 +999,15 @@ function AdminDashboard() {
     setNewReview({ userId: '', remarks: '' });
   };
 
-  const deleteReview = async (id) => {
-    if (window.confirm('Delete this review?')) {
-      await apiCall('DELETE', `/reviews/delete-review/${id}`);
-    }
+  const deleteReview = (id) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Delete Review',
+      message: 'Are you sure you want to delete this review?',
+      onConfirm: async () => {
+        await apiCall('DELETE', `/reviews/delete-review/${id}`);
+      }
+    });
   };
 
   // CRUD for Service Requests
@@ -1008,6 +1036,38 @@ function AdminDashboard() {
     };
 
     await apiCall('PUT', '/settings', payload);
+  };
+
+  const deleteContactMessage = (id) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Delete Contact Message',
+      message: 'Are you sure you want to delete this contact message?',
+      onConfirm: async () => {
+        await apiCall('DELETE', `/contact-messages/${id}`);
+      }
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (confirmState.onConfirm) {
+      await confirmState.onConfirm();
+    }
+    setConfirmState({
+      isOpen: false,
+      title: '',
+      message: '',
+      onConfirm: null
+    });
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmState({
+      isOpen: false,
+      title: '',
+      message: '',
+      onConfirm: null
+    });
   };
 
   const handleLogout = () => {
@@ -2935,6 +2995,27 @@ function AdminDashboard() {
                             )}
                           </div>
                         </div>
+                        <button
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-light tracking-wider uppercase rounded-sm transition-all duration-300"
+                          style={{
+                            borderColor: '#DC2626',
+                            color: '#DC2626',
+                            borderWidth: '1px',
+                            borderStyle: 'solid'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#DC2626';
+                            e.currentTarget.style.color = 'white';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = '#DC2626';
+                          }}
+                          onClick={() => deleteContactMessage(msg._id)}
+                        >
+                          <FaTrash />
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -3140,6 +3221,55 @@ function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {confirmState.isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-sm shadow-lg max-w-sm w-full mx-4 p-6">
+            <h3 className="text-lg font-light mb-2" style={{ color: customStyles.navy[900] }}>
+              {confirmState.title}
+            </h3>
+            <p className="text-sm text-gray-600 font-light mb-6">
+              {confirmState.message}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 text-xs font-light tracking-wider uppercase rounded-sm border transition-all duration-300"
+                style={{
+                  borderColor: customStyles.navy[300],
+                  color: customStyles.navy[700],
+                  backgroundColor: 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = customStyles.navy[50];
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                }}
+                onClick={handleCancelDelete}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 text-xs font-light tracking-wider uppercase rounded-sm border transition-all duration-300"
+                style={{
+                  borderColor: '#DC2626',
+                  backgroundColor: '#DC2626',
+                  color: 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#B91C1C';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#DC2626';
+                }}
+                onClick={handleConfirmDelete}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

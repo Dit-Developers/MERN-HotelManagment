@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaUserTag, FaBriefcase, FaArrowRight, FaHotel, FaEye, FaEyeSlash } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import { API_URL } from '../config/api';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -212,7 +213,7 @@ function Register() {
     setErrors(prev => ({ ...prev, general: '' }));
 
     try {
-      const response = await axios.post('http://localhost:5001/api/register', formData);
+      const response = await axios.post(`${API_URL}/register`, formData);
       
       if (response.status === 201) {
         setSuccess('Registration successful! You will be redirected to login shortly.');

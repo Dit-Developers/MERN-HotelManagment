@@ -18,6 +18,7 @@ import {
   FaTachometerAlt
 } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import { API_URL } from '../config/api';
 
 function StaffDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -28,7 +29,13 @@ function StaffDashboard() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [user] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
-  
+  const [confirmState, setConfirmState] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
   const [newMaintenance, setNewMaintenance] = useState({
     roomNumber: '',
     issueType: 'plumbing',
@@ -36,7 +43,6 @@ function StaffDashboard() {
     priority: 'normal'
   });
   
-  const API_URL = 'http://localhost:5001/api';
   const token = localStorage.getItem('token');
 
   // Custom color styles matching ReceptionDashboard
@@ -129,7 +135,7 @@ function StaffDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, token, user]);
+  }, [token, user]);
 
   const fetchTabData = useCallback(async (tab) => {
     setLoading(true);
@@ -191,7 +197,7 @@ function StaffDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, token, user]);
+  }, [token, user]);
 
   // Clear messages
   useEffect(() => {
@@ -263,24 +269,53 @@ function StaffDashboard() {
     }
   };
 
-  // Mark room as cleaned
-  const markRoomAsCleaned = async (roomId) => {
-    if (window.confirm('Mark this room as cleaned?')) {
-      await apiCall('PUT', `/room/update-room-status/${roomId}`, { 
-        status: 'available',
-        isAvailable: true 
-      });
-    }
+  const markRoomAsCleaned = (roomId) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Mark Room as Cleaned',
+      message: 'Are you sure you want to mark this room as cleaned?',
+      onConfirm: async () => {
+        await apiCall('PUT', `/room/update-room-status/${roomId}`, { 
+          status: 'available',
+          isAvailable: true 
+        });
+      }
+    });
   };
  
-  // Mark room as dirty (needs cleaning)
-  const markRoomAsDirty = async (roomId) => {
-    if (window.confirm('Mark this room as needs cleaning?')) {
-      await apiCall('PUT', `/room/update-room-status/${roomId}`, { 
-        status: 'cleaning',
-        isAvailable: false
-      });
+  const markRoomAsDirty = (roomId) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Mark Room as Needs Cleaning',
+      message: 'Are you sure you want to mark this room as needs cleaning?',
+      onConfirm: async () => {
+        await apiCall('PUT', `/room/update-room-status/${roomId}`, { 
+          status: 'cleaning',
+          isAvailable: false
+        });
+      }
+    });
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if (confirmState.onConfirm) {
+      await confirmState.onConfirm();
     }
+    setConfirmState({
+      isOpen: false,
+      title: '',
+      message: '',
+      onConfirm: null
+    });
+  };
+
+  const handleCancelStatusChange = () => {
+    setConfirmState({
+      isOpen: false,
+      title: '',
+      message: '',
+      onConfirm: null
+    });
   };
 
   // Update service request status
@@ -1116,6 +1151,55 @@ function StaffDashboard() {
           </div>
         </div>
       </div>
+
+      {confirmState.isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-sm shadow-lg max-w-sm w-full mx-4 p-6">
+            <h3 className="text-lg font-light mb-2" style={{ color: customStyles.navy[900] }}>
+              {confirmState.title}
+            </h3>
+            <p className="text-sm text-gray-600 font-light mb-6">
+              {confirmState.message}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 text-xs font-light tracking-wider uppercase rounded-sm border transition-all duration-300"
+                style={{
+                  borderColor: customStyles.navy[300],
+                  color: customStyles.navy[700],
+                  backgroundColor: 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = customStyles.navy[50];
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                }}
+                onClick={handleCancelStatusChange}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 text-xs font-light tracking-wider uppercase rounded-sm border transition-all duration-300"
+                style={{
+                  borderColor: customStyles.gold[600],
+                  backgroundColor: customStyles.gold[600],
+                  color: 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = customStyles.gold[700];
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = customStyles.gold[600];
+                }}
+                onClick={handleConfirmStatusChange}
+              >
+                Yes, Proceed
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

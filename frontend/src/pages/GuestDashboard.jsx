@@ -36,6 +36,7 @@ import {
   FaUser
 } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import { API_URL } from '../config/api';
 
 function GuestDashboard() {
   const [user, setUser] = useState(null);
@@ -206,7 +207,7 @@ function GuestDashboard() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        "http://localhost:5001/api/room/all-rooms",
+        `${API_URL}/room/all-rooms`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -228,7 +229,7 @@ function GuestDashboard() {
       }
 
       const bookingsResponse = await axios.get(
-        "http://localhost:5001/api/booking/my-bookings",
+        `${API_URL}/booking/my-bookings`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -243,7 +244,7 @@ function GuestDashboard() {
 
       // Fetch all rooms to get room details
       const roomsResponse = await axios.get(
-        "http://localhost:5001/api/room/all-rooms",
+        `${API_URL}/room/all-rooms`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -278,7 +279,7 @@ function GuestDashboard() {
       }
 
       const response = await axios.get(
-        "http://localhost:5001/api/service-requests/my-requests",
+        `${API_URL}/service-requests/my-requests`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -315,7 +316,7 @@ function GuestDashboard() {
       const userData = JSON.parse(localStorage.getItem("user"));
       
       await axios.post(
-        "http://localhost:5001/api/booking/create-booking",
+        `${API_URL}/booking/create-booking`,
         {
           guestId: userData?._id,
           roomId: bookingForm.roomId,
@@ -372,7 +373,7 @@ function GuestDashboard() {
       }
 
       await axios.post(
-        "http://localhost:5001/api/service-requests/create",
+        `${API_URL}/service-requests/create`,
         {
           userId: userData._id, // Add current user ID
           serviceType: serviceForm.serviceType,
@@ -419,7 +420,7 @@ function GuestDashboard() {
       const userData = JSON.parse(localStorage.getItem("user"));
       
       await axios.post(
-        "http://localhost:5001/api/reviews/create-review",
+        `${API_URL}/reviews/create-review`,
         {
           userId: userData?._id,
           remarks: feedbackForm.remarks,
@@ -497,7 +498,7 @@ function GuestDashboard() {
       }
 
       const response = await axios.put(
-        "http://localhost:5001/api/profile",
+        `${API_URL}/profile`,
         payload,
         {
           headers: { Authorization: `Bearer ${token}` }

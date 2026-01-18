@@ -27,6 +27,7 @@ import {
   FaIdCard
 } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import { API_URL } from '../config/api';
 
 function ReceptionDashboard() {
   const [user, setUser] = useState(null);
@@ -91,8 +92,6 @@ function ReceptionDashboard() {
   });
   
   const [selectedGuest, setSelectedGuest] = useState(null);
-
-  const API_URL = 'http://localhost:5001/api';
   const token = localStorage.getItem('token');
 
   // Custom color styles matching HomePage

@@ -23,6 +23,7 @@ import {
   FaChevronDown
 } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import { API_URL } from '../config/api';
 
 function ManagerDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -40,9 +41,7 @@ function ManagerDashboard() {
   // Filter states
   const [dateFilter, setDateFilter] = useState('today');
   const [statusFilter, setStatusFilter] = useState('all');
-  
   const [user] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
-  const API_URL = 'http://localhost:5001/api';
   const token = localStorage.getItem('token');
 
   // Custom color styles matching HomePage
@@ -145,7 +144,7 @@ function ManagerDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, token]);
+  }, [token]);
 
   const fetchTabData = useCallback(async (tab) => {
     setLoading(true);
@@ -233,7 +232,7 @@ function ManagerDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, token]);
+  }, [token]);
 
   useEffect(() => {
     if (token) {
