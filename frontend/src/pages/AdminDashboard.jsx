@@ -38,6 +38,7 @@ function AdminDashboard() {
   const [payments, setPayments] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [serviceRequests, setServiceRequests] = useState([]);
+  const [contactMessages, setContactMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -495,6 +496,16 @@ function AdminDashboard() {
           const settingsData = await settingsRes.json();
           const settingsObj = settingsData?.settings || settingsData;
 
+          const contactRes = await fetch(`${API_URL}/contact-messages`, { headers });
+          const contactData = await contactRes.json();
+          const messagesArray = Array.isArray(contactData?.messages)
+            ? contactData.messages
+            : Array.isArray(contactData)
+            ? contactData
+            : [];
+
+          setContactMessages(messagesArray);
+
           if (settingsObj) {
             const defaultTaxRate = typeof settingsObj.defaultTaxRate === 'number'
               ? settingsObj.defaultTaxRate
@@ -544,6 +555,19 @@ function AdminDashboard() {
       fetchTabData(activeTab);
     }
   }, [activeTab, token, fetchTabData]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (token) {
+        fetchAllData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [token, fetchAllData]);
 
   // Refresh all data
   const refreshData = () => {
@@ -986,10 +1010,9 @@ function AdminDashboard() {
     await apiCall('PUT', '/settings', payload);
   };
 
-  // Logout
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   // Render content based on active tab
@@ -2854,6 +2877,70 @@ function AdminDashboard() {
                 Save Settings
               </button>
             </form>
+
+            <div className={cardClasses}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-light text-gray-900 mb-2">
+                    Contact Messages <span className="text-sm font-normal" style={{ color: customStyles.gold[600] }}>({Array.isArray(contactMessages) ? contactMessages.length : 0})</span>
+                  </h3>
+                  <p className="text-gray-600 font-light text-sm">
+                    Messages sent from the public contact page
+                  </p>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="py-20 text-center">
+                  <div className="mx-auto w-8 h-8 border-t-2 border-b-2 rounded-full animate-spin" style={{ borderColor: customStyles.gold[600] }}></div>
+                  <p className="mt-4 text-gray-600 font-light">Loading contact messages...</p>
+                </div>
+              ) : !Array.isArray(contactMessages) || contactMessages.length === 0 ? (
+                <div className="text-center py-12">
+                  <FaCommentDots className="text-4xl mx-auto mb-4" style={{ color: customStyles.navy[300] }} />
+                  <p className="text-gray-600 font-light">No contact messages found</p>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-1">
+                  {contactMessages.map(msg => (
+                    <div
+                      key={msg._id}
+                      className="group p-5 rounded-sm border transition-all duration-300 hover:bg-white/70 hover:shadow-md"
+                      style={{ borderColor: customStyles.navy[200] }}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="text-base font-light" style={{ color: customStyles.navy[900] }}>
+                              {msg.subject || 'Contact Message'}
+                            </h4>
+                            <span className="text-xs font-light text-gray-500">
+                              {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ''}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 font-light mb-2">
+                            {msg.message}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                            <span className="font-medium">
+                              {msg.name}
+                            </span>
+                            <span>•</span>
+                            <span>{msg.email}</span>
+                            {msg.phone && (
+                              <>
+                                <span>•</span>
+                                <span>{msg.phone}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         );
 

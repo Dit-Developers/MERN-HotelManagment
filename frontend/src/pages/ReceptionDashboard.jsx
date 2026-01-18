@@ -285,6 +285,17 @@ function ReceptionDashboard() {
     fetchAllData();
   }, []);
   
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchAllData();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+  
   // Fetch all data
   const fetchAllData = async () => {
     setLoading(true);
@@ -757,10 +768,9 @@ function ReceptionDashboard() {
     setLoading(false);
   };
   
-  // Logout
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   const handlePrintInvoice = () => {

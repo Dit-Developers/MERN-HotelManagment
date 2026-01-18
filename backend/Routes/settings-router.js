@@ -7,5 +7,6 @@ const settingsController = require('../Controllers/settings-controller');
 router.get("/settings", authenticateJWT, authorizeRole('admin', 'manager', 'receptionist'), settingsController.getSettings);
 router.put("/settings", authenticateJWT, authorizeRole('admin'), settingsController.updateSettings);
 router.post("/contact", settingsController.submitContactMessage);
+router.get("/contact-messages", authenticateJWT, authorizeRole('admin'), settingsController.getContactMessages);
 
 module.exports = router;

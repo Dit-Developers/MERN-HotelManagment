@@ -216,6 +216,19 @@ function StaffDashboard() {
     }
   }, [activeTab, token, fetchTabData]);
 
+  useEffect(() => {
+    const handleFocus = () => {
+      if (token) {
+        fetchAllData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [token, fetchAllData]);
+
   // Refresh all data
   const refreshData = () => {
     fetchAllData();
@@ -322,10 +335,9 @@ function StaffDashboard() {
     };
   };
 
-  // Logout
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   const tabs = [

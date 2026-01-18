@@ -20,7 +20,7 @@ function Header() {
   const handleLogout = () => {
     localStorage.clear();
     setIsMenuOpen(false);
-    navigate('/login');
+    navigate('/');
   };
 
   // Custom color styles

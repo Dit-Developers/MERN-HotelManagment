@@ -533,10 +533,8 @@ function GuestDashboard() {
     }
   };
 
-  // Logout function
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/login";
+  const handleBackToWebsite = () => {
+    window.location.href = "/";
   };
 
   if (!user) {
@@ -599,26 +597,26 @@ function GuestDashboard() {
                 </div>
               </div>
             </div>
-            
+
             <button
-              onClick={handleLogout}
+              onClick={handleBackToWebsite}
               className="group px-6 py-3 text-white font-medium rounded-sm transition-all duration-300 transform hover:scale-105 text-sm tracking-wider uppercase relative overflow-hidden border"
-              style={{ 
+              style={{
                 borderColor: customStyles.gold[600],
-                backgroundColor: 'transparent'
+                backgroundColor: "transparent"
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = customStyles.gold[600];
                 e.currentTarget.style.borderColor = customStyles.gold[600];
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.backgroundColor = "transparent";
                 e.currentTarget.style.borderColor = customStyles.gold[600];
               }}
             >
               <span className="relative z-10 flex items-center gap-2">
-                <FaSignOutAlt />
-                Logout
+                <FaHome />
+                Back to Website
               </span>
             </button>
           </div>
