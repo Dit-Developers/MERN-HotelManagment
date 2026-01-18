@@ -151,7 +151,8 @@ const profileData = async (req, res) => {
       username: findUser.username,
       phone: findUser.phone,
       role: findUser.role,
-      status: findUser.status
+      status: findUser.status,
+      preferences: findUser.preferences || ""
     };
 
     console.log("✅ Sending user data:", userData.email);
@@ -253,8 +254,6 @@ const updateUserStatus = async (req, res) => {
   }
 }
 
-// USER MANAGEMENT API
-// Delete user API for admin - NOT FOR USE
 const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -266,6 +265,102 @@ const deleteUser = async (req, res) => {
   } catch (error) {
     console.error("Server error", error);
     return res.status(400).json({message:"Server error", error});
+  }
+}
+
+const updateOwnProfile = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Unauthorized. Please login first." });
+    }
+
+    const { fullName, username, phone, email, preferences, currentPassword, newPassword } = req.body;
+
+    const user = await userModel.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let hasChanges = false;
+
+    if (typeof fullName === "string" && fullName.trim() && fullName.trim() !== user.fullName) {
+      user.fullName = fullName.trim();
+      hasChanges = true;
+    }
+
+    if (typeof username === "string" && username.trim() && username.trim() !== user.username) {
+      user.username = username.trim();
+      hasChanges = true;
+    }
+
+    if (typeof phone === "string" && phone.trim() && phone.trim() !== user.phone) {
+      user.phone = phone.trim();
+      hasChanges = true;
+    }
+
+    if (typeof email === "string" && email.trim() && email.trim() !== user.email) {
+      const trimmedEmail = email.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+      const existing = await userModel.findOne({ email: trimmedEmail });
+      if (existing && existing._id.toString() !== user._id.toString()) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
+      user.email = trimmedEmail;
+      hasChanges = true;
+    }
+
+    if (typeof preferences === "string" && preferences.trim() !== (user.preferences || "")) {
+      user.preferences = preferences.trim();
+      hasChanges = true;
+    }
+
+    if (newPassword && typeof newPassword === "string" && newPassword.trim()) {
+      if (!currentPassword || typeof currentPassword !== "string" || !currentPassword.trim()) {
+        return res.status(400).json({ message: "Current password is required to change password" });
+      }
+
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+
+      const passwordValue = newPassword.trim();
+      const hasMinLength = passwordValue.length >= 8;
+      const hasLetter = /[A-Za-z]/.test(passwordValue);
+      const hasNumber = /[0-9]/.test(passwordValue);
+      if (!hasMinLength || !hasLetter || !hasNumber) {
+        return res.status(400).json({ message: "New password must be at least 8 characters and include letters and numbers" });
+      }
+
+      user.password = passwordValue;
+      hasChanges = true;
+    }
+
+    if (!hasChanges) {
+      return res.status(400).json({ message: "No valid fields provided to update" });
+    }
+
+    const savedUser = await user.save();
+
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      user: {
+        _id: savedUser._id,
+        fullName: savedUser.fullName,
+        username: savedUser.username,
+        email: savedUser.email,
+        phone: savedUser.phone,
+        role: savedUser.role,
+        status: savedUser.status,
+        preferences: savedUser.preferences || ""
+      }
+    });
+  } catch (error) {
+    console.error("Server error", error);
+    return res.status(500).json({ message: "Server error", error });
   }
 }
 
@@ -310,4 +405,4 @@ const deleteUser = async (req, res) => {
 //     }, 100);
 //   }
 // }, [navigate]);
-module.exports = { register, login,  profileData, update, getAllUsers, getSingleUser, updateUserStatus , deleteUser};
+module.exports = { register, login,  profileData, update, getAllUsers, getSingleUser, updateUserStatus , deleteUser, updateOwnProfile};

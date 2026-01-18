@@ -90,12 +90,13 @@ const getSingleServiceRequest = async (req, res) => {
   }
 };
 
-// UPDATE SERVICE REQUEST STATUS (User can cancel their own)
+// UPDATE SERVICE REQUEST STATUS
 const updateServiceRequestStatus = async (req, res) => {
   try {
     const { requestId } = req.params;
     const { status } = req.body;
     const userId = req.user._id;
+    const userRole = req.user.role;
 
     // Validate status
     const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
@@ -105,11 +106,13 @@ const updateServiceRequestStatus = async (req, res) => {
       });
     }
 
-    // Find the request
-    const serviceRequest = await ServiceRequest.findOne({
-      _id: requestId,
-      userId // User can only update their own requests
-    });
+    const filter = { _id: requestId };
+
+    if (userRole === 'guest') {
+      filter.userId = userId;
+    }
+
+    const serviceRequest = await ServiceRequest.findOne(filter);
 
     if (!serviceRequest) {
       return res.status(404).json({ 

@@ -1,15 +1,19 @@
 const bookingModel = require('../Models/BookingModel');
 
-// create booking API 
 const createBooking = async (req, res) => {
     try {
         const { guestId, roomId, bookingDate, checkinDate, checkoutDate, bookingStatus } = req.body;
 
-        const findAnExistingBooking = await bookingModel.findOne({ guestId: guestId, roomId: roomId });
+        let effectiveGuestId = guestId;
+        if (req.user && req.user.role === 'guest') {
+            effectiveGuestId = req.user._id;
+        }
+
+        const findAnExistingBooking = await bookingModel.findOne({ guestId: effectiveGuestId, roomId: roomId });
         if (findAnExistingBooking) { return res.status(400).json({ message: "Booking already exists" }); }
 
         const booking = await bookingModel.create({
-            guestId, roomId, bookingDate, checkinDate, checkoutDate, bookingStatus
+            guestId: effectiveGuestId, roomId, bookingDate, checkinDate, checkoutDate, bookingStatus
         });
 
         if (booking) {
@@ -25,7 +29,6 @@ const createBooking = async (req, res) => {
 }
 
 
-// GET all bookings API
 const getAllBookings = async (req, res) => {
     try {
         const allBookings = await bookingModel.find();
@@ -38,13 +41,18 @@ const getAllBookings = async (req, res) => {
     }
 }
 
-// GET Single Booking details API
-
 const getSingleBookingDetails = async (req, res) => {
     try {
         const bookingId = req.params.bookingId;
         const findBooking = await bookingModel.findOne({ _id: bookingId });
         if (!findBooking) { return res.status(404).json({ message: "Booking not found" }); }
+
+        if (req.user && req.user.role === 'guest') {
+            if (!findBooking.guestId || String(findBooking.guestId) !== String(req.user._id)) {
+                return res.status(403).json({ message: "Forbidden. You can only view your own bookings" });
+            }
+        }
+
         return res.status(200).json({ message: "Here is your booking details", findBooking });
     } catch (error) {
         console.error("Server error", error);
@@ -53,7 +61,6 @@ const getSingleBookingDetails = async (req, res) => {
 }
 
 
-// Update booking status API
 const updateBookingStatus = async (req, res) => {
     try {
         const bookingId = req.params.bookingId;
@@ -70,4 +77,20 @@ const updateBookingStatus = async (req, res) => {
     }
 }
 
-module.exports = { createBooking, getAllBookings, getSingleBookingDetails, updateBookingStatus };
+const getMyBookings = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        const userId = req.user._id;
+        const bookings = await bookingModel.find({ guestId: userId });
+
+        return res.status(200).json({ message: "User bookings found", bookings: bookings || [] });
+    } catch (error) {
+        console.error("Server error", error);
+        return res.status(400).json({ message: "Server error", error });
+    }
+}
+
+module.exports = { createBooking, getAllBookings, getSingleBookingDetails, updateBookingStatus, getMyBookings };

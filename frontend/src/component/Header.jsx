@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaTimes, FaUser, FaSignOutAlt, FaHome, FaInfoCircle, FaBed, FaImages, FaEnvelope } from 'react-icons/fa';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const user = JSON.parse(localStorage.getItem('user'));
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleDashboardClick = () => {
     if (user) {
@@ -50,6 +51,8 @@ function Header() {
     }
   };
 
+  const isActive = (path) => location.pathname === path;
+
   return (
     <header 
       className="sticky top-0 z-50 shadow-lg transition-all duration-300"
@@ -78,7 +81,11 @@ function Header() {
               <li>
                 <Link 
                   to="/" 
-                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase text-gray-300 hover:text-white transition-colors duration-300 rounded-sm"
+                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase transition-colors duration-300 rounded-sm border-b-2"
+                  style={{ 
+                    color: isActive('/') ? customStyles.gold[500] : '#d1d5db',
+                    borderColor: isActive('/') ? customStyles.gold[500] : 'transparent'
+                  }}
                   onMouseEnter={(e) => e.currentTarget.style.color = customStyles.gold[500]}
                   onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
                 >
@@ -89,7 +96,11 @@ function Header() {
               <li>
                 <Link 
                   to="/about" 
-                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase text-gray-300 hover:text-white transition-colors duration-300 rounded-sm"
+                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase transition-colors duration-300 rounded-sm border-b-2"
+                  style={{ 
+                    color: isActive('/about') ? customStyles.gold[500] : '#d1d5db',
+                    borderColor: isActive('/about') ? customStyles.gold[500] : 'transparent'
+                  }}
                   onMouseEnter={(e) => e.currentTarget.style.color = customStyles.gold[500]}
                   onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
                 >
@@ -100,7 +111,11 @@ function Header() {
               <li>
                 <Link 
                   to="/rooms" 
-                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase text-gray-300 hover:text-white transition-colors duration-300 rounded-sm"
+                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase transition-colors duration-300 rounded-sm border-b-2"
+                  style={{ 
+                    color: isActive('/rooms') ? customStyles.gold[500] : '#d1d5db',
+                    borderColor: isActive('/rooms') ? customStyles.gold[500] : 'transparent'
+                  }}
                   onMouseEnter={(e) => e.currentTarget.style.color = customStyles.gold[500]}
                   onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
                 >
@@ -111,7 +126,11 @@ function Header() {
               <li>
                 <Link 
                   to="/gallery" 
-                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase text-gray-300 hover:text-white transition-colors duration-300 rounded-sm"
+                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase transition-colors duration-300 rounded-sm border-b-2"
+                  style={{ 
+                    color: isActive('/gallery') ? customStyles.gold[500] : '#d1d5db',
+                    borderColor: isActive('/gallery') ? customStyles.gold[500] : 'transparent'
+                  }}
                   onMouseEnter={(e) => e.currentTarget.style.color = customStyles.gold[500]}
                   onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
                 >
@@ -122,7 +141,11 @@ function Header() {
               <li>
                 <Link 
                   to="/contact" 
-                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase text-gray-300 hover:text-white transition-colors duration-300 rounded-sm"
+                  className="flex items-center px-3 xl:px-4 py-2 text-xs xl:text-sm font-light tracking-wider uppercase transition-colors duration-300 rounded-sm border-b-2"
+                  style={{ 
+                    color: isActive('/contact') ? customStyles.gold[500] : '#d1d5db',
+                    borderColor: isActive('/contact') ? customStyles.gold[500] : 'transparent'
+                  }}
                   onMouseEnter={(e) => e.currentTarget.style.color = customStyles.gold[500]}
                   onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
                 >
@@ -273,15 +296,18 @@ function Header() {
             <Link 
               to="/" 
               className="flex items-center px-4 py-3 text-sm font-light tracking-wider uppercase rounded-sm w-full transition-all duration-300"
-              style={{ color: customStyles.gold[100] }}
+              style={{ 
+                color: isActive('/') ? customStyles.gold[500] : customStyles.gold[100],
+                backgroundColor: isActive('/') ? customStyles.navy[800] : 'transparent'
+              }}
               onClick={() => setIsMenuOpen(false)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = customStyles.navy[800];
                 e.currentTarget.style.color = customStyles.gold[500];
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = customStyles.gold[100];
+                e.currentTarget.style.backgroundColor = isActive('/') ? customStyles.navy[800] : 'transparent';
+                e.currentTarget.style.color = isActive('/') ? customStyles.gold[500] : customStyles.gold[100];
               }}
             >
               <FaHome className="mr-3" />
@@ -290,15 +316,18 @@ function Header() {
             <Link 
               to="/about" 
               className="flex items-center px-4 py-3 text-sm font-light tracking-wider uppercase rounded-sm w-full transition-all duration-300"
-              style={{ color: '#d1d5db' }}
+              style={{ 
+                color: isActive('/about') ? customStyles.gold[500] : '#d1d5db',
+                backgroundColor: isActive('/about') ? customStyles.navy[800] : 'transparent'
+              }}
               onClick={() => setIsMenuOpen(false)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = customStyles.navy[800];
                 e.currentTarget.style.color = customStyles.gold[500];
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#d1d5db';
+                e.currentTarget.style.backgroundColor = isActive('/about') ? customStyles.navy[800] : 'transparent';
+                e.currentTarget.style.color = isActive('/about') ? customStyles.gold[500] : '#d1d5db';
               }}
             >
               <FaInfoCircle className="mr-3" />
@@ -307,15 +336,18 @@ function Header() {
             <Link 
               to="/rooms" 
               className="flex items-center px-4 py-3 text-sm font-light tracking-wider uppercase rounded-sm w-full transition-all duration-300"
-              style={{ color: '#d1d5db' }}
+              style={{ 
+                color: isActive('/rooms') ? customStyles.gold[500] : '#d1d5db',
+                backgroundColor: isActive('/rooms') ? customStyles.navy[800] : 'transparent'
+              }}
               onClick={() => setIsMenuOpen(false)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = customStyles.navy[800];
                 e.currentTarget.style.color = customStyles.gold[500];
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#d1d5db';
+                e.currentTarget.style.backgroundColor = isActive('/rooms') ? customStyles.navy[800] : 'transparent';
+                e.currentTarget.style.color = isActive('/rooms') ? customStyles.gold[500] : '#d1d5db';
               }}
             >
               <FaBed className="mr-3" />
@@ -324,15 +356,18 @@ function Header() {
             <Link 
               to="/gallery" 
               className="flex items-center px-4 py-3 text-sm font-light tracking-wider uppercase rounded-sm w-full transition-all duration-300"
-              style={{ color: '#d1d5db' }}
+              style={{ 
+                color: isActive('/gallery') ? customStyles.gold[500] : '#d1d5db',
+                backgroundColor: isActive('/gallery') ? customStyles.navy[800] : 'transparent'
+              }}
               onClick={() => setIsMenuOpen(false)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = customStyles.navy[800];
                 e.currentTarget.style.color = customStyles.gold[500];
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#d1d5db';
+                e.currentTarget.style.backgroundColor = isActive('/gallery') ? customStyles.navy[800] : 'transparent';
+                e.currentTarget.style.color = isActive('/gallery') ? customStyles.gold[500] : '#d1d5db';
               }}
             >
               <FaImages className="mr-3" />
@@ -341,15 +376,18 @@ function Header() {
             <Link 
               to="/contact" 
               className="flex items-center px-4 py-3 text-sm font-light tracking-wider uppercase rounded-sm w-full transition-all duration-300"
-              style={{ color: '#d1d5db' }}
+              style={{ 
+                color: isActive('/contact') ? customStyles.gold[500] : '#d1d5db',
+                backgroundColor: isActive('/contact') ? customStyles.navy[800] : 'transparent'
+              }}
               onClick={() => setIsMenuOpen(false)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = customStyles.navy[800];
                 e.currentTarget.style.color = customStyles.gold[500];
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#d1d5db';
+                e.currentTarget.style.backgroundColor = isActive('/contact') ? customStyles.navy[800] : 'transparent';
+                e.currentTarget.style.color = isActive('/contact') ? customStyles.gold[500] : '#d1d5db';
               }}
             >
               <FaEnvelope className="mr-3" />

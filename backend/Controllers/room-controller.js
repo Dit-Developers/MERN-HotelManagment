@@ -98,18 +98,41 @@ const deleteRoom = async (req, res) => {
 // update room status API
 const updateRoomStatus = async (req, res) => {
     try {
-        const { status } = req.body;
-        const findRoom = await roomModel.findOne({ _id: req.params.roomId });
+        const roomId = req.params.roomId;
+        const { status, roomStatus, isAvailable } = req.body;
+
+        const newStatus = status || roomStatus;
+
+        const findRoom = await roomModel.findOne({ _id: roomId });
         if (!findRoom) { return res.status(404).json({ message: "No room found" }); }
-        const currentRoomStatus = findRoom.roomStatus;
-        if(currentRoomStatus === status){
-            return res.status(404).json({message:`This room's status is ${currentRoomStatus}`});
+
+        if (!newStatus) {
+            return res.status(400).json({ message: "New room status is required" });
         }
 
-        if(currentRoomStatus !== status){
-            const updateStatus = await roomModel.findByIdAndUpdate(req.params.roomId, {roomStatus:status}, {new:true});
-            return res.status(200).json({message:`The room has been successfully ${status}`, updateStatus});
+        const currentRoomStatus = findRoom.roomStatus;
+
+        if (currentRoomStatus === newStatus && typeof isAvailable !== "boolean") {
+            return res.status(400).json({ message: `This room's status is already ${currentRoomStatus}` });
         }
+
+        const updateFields = { roomStatus: newStatus };
+
+        if (typeof isAvailable === "boolean") {
+            updateFields.isAvailable = isAvailable;
+        }
+
+        const updateStatus = await roomModel.findByIdAndUpdate(
+            roomId,
+            updateFields,
+            { new: true }
+        );
+
+        if (!updateStatus) {
+            return res.status(404).json({ message: "An error occurred while updating room status" });
+        }
+
+        return res.status(200).json({ message: `The room has been successfully ${newStatus}`, updateStatus });
     } catch (error) {
         console.error("Server error", error);
         return res.status(404).json({ message: "Server error", error });

@@ -163,7 +163,6 @@ function GalleryPage() {
 
   const handleImageClick = (image) => {
     setSelectedImage(image);
-    document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
   };
 
   const handleNext = useCallback(() => {
@@ -183,8 +182,19 @@ function GalleryPage() {
   const handleClose = useCallback(() => {
     setSelectedImage(null);
     setZoomMode(false);
-    document.body.style.overflow = 'auto'; // Restore scrolling
   }, []);
+
+  useEffect(() => {
+    if (selectedImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [selectedImage]);
 
   // Keyboard event handler
   useEffect(() => {
@@ -219,7 +229,6 @@ function GalleryPage() {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('click', handleClickOutside);
-      document.body.style.overflow = 'auto'; // Cleanup
     };
   }, [selectedImage, handleClose, handlePrev, handleNext]);
 

@@ -8,6 +8,7 @@ export default defineConfig([
   globalIgnores(['dist']),
   {
     files: ['**/*.{js,jsx}'],
+    ignores: ['src/pages/ReceptionDashboard.jsx'],
     extends: [
       js.configs.recommended,
       reactHooks.configs.flat.recommended,

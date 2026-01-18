@@ -1,4 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  FaBed,
+  FaBroom,
+  FaWrench,
+  FaSyncAlt,
+  FaUserCircle,
+  FaSignOutAlt,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaClock,
+  FaExclamationTriangle,
+  FaCalendarCheck,
+  FaListUl,
+  FaClipboardCheck,
+  FaTools,
+  FaFileAlt,
+  FaTachometerAlt
+} from 'react-icons/fa';
+import FormStatus from '../component/FormStatus';
 
 function StaffDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -8,46 +27,60 @@ function StaffDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [user] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
   
-  // Form states
   const [newMaintenance, setNewMaintenance] = useState({
     roomNumber: '',
     issueType: 'plumbing',
     description: '',
-    priority: 'medium'
+    priority: 'normal'
   });
   
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = 'http://localhost:5001/api';
   const token = localStorage.getItem('token');
 
-  // Clear messages
-  useEffect(() => {
-    if (error || success) {
-      const timer = setTimeout(() => {
-        setError('');
-        setSuccess('');
-      }, 3000);
-      return () => clearTimeout(timer);
+  // Custom color styles matching ReceptionDashboard
+  const customStyles = {
+    navy: {
+      50: '#f0f4f8',
+      100: '#d9e2ec',
+      200: '#bcccdc',
+      300: '#9fb3c8',
+      400: '#829ab1',
+      500: '#627d98',
+      600: '#486581',
+      700: '#334e68',
+      800: '#243b53',
+      900: '#102a43',
+    },
+    gold: {
+      50: '#fff9e6',
+      100: '#ffefbf',
+      200: '#ffe599',
+      300: '#ffdb73',
+      400: '#ffd14d',
+      500: '#c7a53f',
+      600: '#b89434',
+      700: '#9e7b2e',
+      800: '#856328',
+      900: '#6c4c22',
     }
-  }, [error, success]);
+  };
 
-  // Fetch all initial data on component mount
-  useEffect(() => {
-    if (token) {
-      fetchAllData();
-    }
-  }, []);
+  // Updated styles to match ReceptionDashboard
+  const tabBaseClasses = "px-6 py-3 text-sm font-light tracking-wider uppercase transition-all duration-300 rounded-sm border";
+  const tabActiveClasses = "font-normal shadow-lg";
+  const tabInactiveClasses = "border-gray-300 text-gray-700 hover:text-gray-900";
+  
+  const inputClasses = "w-full rounded-sm border px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 font-light transition-all duration-300 bg-white/80 backdrop-blur-sm";
+  const textareaClasses = "w-full rounded-sm border px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 font-light resize-y transition-all duration-300 bg-white/80 backdrop-blur-sm min-h-[100px]";
+  const selectClasses = "w-full rounded-sm border px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 font-light transition-all duration-300 bg-white/80 backdrop-blur-sm";
+  const submitButtonClasses = "w-full mt-4 px-6 py-3 text-sm font-medium text-white rounded-sm transition-all duration-300 transform hover:scale-105 tracking-wider uppercase relative overflow-hidden hover:shadow-lg";
+  const tableContainerClasses = "rounded-sm border bg-white/80 backdrop-blur-sm p-6 shadow-sm hover:shadow-lg transition-all duration-500";
+  const listCardClasses = "mb-3 flex items-start justify-between rounded-sm border p-4 bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-300";
+  const badgeBaseClasses = "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white";
 
-  // Fetch data when tab changes to non-dashboard tabs
-  useEffect(() => {
-    if (token && activeTab !== 'dashboard') {
-      fetchTabData(activeTab);
-    }
-  }, [activeTab]);
-
-  // Fetch all data needed for dashboard
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
     try {
       const headers = {
@@ -96,10 +129,9 @@ function StaffDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, token, user]);
 
-  // Fetch data for specific tab
-  const fetchTabData = async (tab) => {
+  const fetchTabData = useCallback(async (tab) => {
     setLoading(true);
     try {
       const headers = {
@@ -107,8 +139,8 @@ function StaffDashboard() {
         'Content-Type': 'application/json'
       };
 
-      switch(tab) {
-        case 'assigned':
+      switch (tab) {
+        case 'assigned': {
           const roomsRes = await fetch(`${API_URL}/room/all-rooms`, { headers });
           const roomsData = await roomsRes.json();
           const rooms = Array.isArray(roomsData) ? roomsData : [];
@@ -120,8 +152,9 @@ function StaffDashboard() {
           );
           setAssignedRooms(assigned);
           break;
+        }
         
-        case 'requests':
+        case 'requests': {
           const requestsRes = await fetch(`${API_URL}/service-requests`, { headers });
           const requestsData = await requestsRes.json();
           const requests = Array.isArray(requestsData?.serviceRequests) ? 
@@ -135,8 +168,9 @@ function StaffDashboard() {
           );
           setServiceRequests(housekeepingRequests);
           break;
+        }
         
-        case 'maintenance':
+        case 'maintenance': {
           const maintenanceRes = await fetch(`${API_URL}/service-requests`, { headers });
           const maintenanceData = await maintenanceRes.json();
           const allRequests = Array.isArray(maintenanceData?.serviceRequests) ? 
@@ -149,6 +183,7 @@ function StaffDashboard() {
           );
           setMaintenanceReports(maintenance);
           break;
+        }
       }
     } catch (error) {
       console.error('Error:', error);
@@ -156,7 +191,30 @@ function StaffDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, token, user]);
+
+  // Clear messages
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError('');
+        setSuccess('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
+
+  useEffect(() => {
+    if (token) {
+      fetchAllData();
+    }
+  }, [token, fetchAllData]);
+
+  useEffect(() => {
+    if (token && activeTab !== 'dashboard') {
+      fetchTabData(activeTab);
+    }
+  }, [activeTab, token, fetchTabData]);
 
   // Refresh all data
   const refreshData = () => {
@@ -196,7 +254,7 @@ function StaffDashboard() {
   const markRoomAsCleaned = async (roomId) => {
     if (window.confirm('Mark this room as cleaned?')) {
       await apiCall('PUT', `/room/update-room-status/${roomId}`, { 
-        roomStatus: 'available',
+        status: 'available',
         isAvailable: true 
       });
     }
@@ -206,7 +264,8 @@ function StaffDashboard() {
   const markRoomAsDirty = async (roomId) => {
     if (window.confirm('Mark this room as needs cleaning?')) {
       await apiCall('PUT', `/room/update-room-status/${roomId}`, { 
-        roomStatus: 'cleaning' 
+        status: 'cleaning',
+        isAvailable: false
       });
     }
   };
@@ -224,20 +283,18 @@ function StaffDashboard() {
   const submitMaintenanceReport = async (e) => {
     e.preventDefault();
     const reportData = {
-      ...newMaintenance,
-      userId: user._id,
       serviceType: 'maintenance',
-      status: 'pending',
-      reportedBy: user.fullName,
-      reportedAt: new Date().toISOString()
+      description: newMaintenance.description,
+      roomNumber: newMaintenance.roomNumber,
+      priority: newMaintenance.priority || 'normal'
     };
-    
+
     await apiCall('POST', '/service-requests/create', reportData);
     setNewMaintenance({
       roomNumber: '',
       issueType: 'plumbing',
       description: '',
-      priority: 'medium'
+      priority: 'normal'
     });
   };
 
@@ -271,712 +328,784 @@ function StaffDashboard() {
     window.location.href = '/login';
   };
 
-  // Render content based on active tab
-  const renderContent = () => {
-    if (loading && activeTab === 'dashboard') return <div style={styles.loading}>Loading dashboard...</div>;
+  const tabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: <FaTachometerAlt /> },
+    { id: 'assigned', label: 'Assigned Rooms', icon: <FaBed /> },
+    { id: 'requests', label: 'Service Requests', icon: <FaBroom /> },
+    { id: 'maintenance', label: 'Maintenance Reports', icon: <FaWrench /> },
+  ];
 
-    switch(activeTab) {
-      case 'dashboard':
-        const stats = calculateDashboardStats();
+  if (!user) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: customStyles.navy[900] }}
+      >
+        <div className="text-center">
+          <div className="text-white font-serif text-xl mb-4">Loading staff dashboard...</div>
+          <div className="w-16 h-1 mx-auto" style={{ background: `linear-gradient(to right, ${customStyles.gold[600]}, transparent)` }}></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className="min-h-screen font-serif"
+      style={{ 
+        background: `linear-gradient(to bottom, ${customStyles.navy[50]}, white)`
+      }}
+    >
+      {/* Header */}
+      <div 
+        className="relative overflow-hidden border-b"
+        style={{ borderColor: customStyles.navy[200] }}
+      >
+        <div className="absolute inset-0">
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(to right, ${customStyles.navy[900]}CC, ${customStyles.navy[800]}CC)`
+            }}
+          ></div>
+        </div>
         
-        return (
-          <div style={styles.dashboard}>
-            <h3>Housekeeping Dashboard</h3>
-            <p>Welcome back, <strong>{user.fullName}</strong>!</p>
-            
-            <div style={styles.stats}>
-              <div style={styles.statCard}>
-                <h4>Rooms Assigned</h4>
-                <p>{stats.assignedRooms}</p>
-              </div>
-              <div style={styles.statCard}>
-                <h4>Pending Requests</h4>
-                <p>{stats.pendingRequests}</p>
-              </div>
-              <div style={styles.statCard}>
-                <h4>Rooms to Clean</h4>
-                <p>{stats.roomsToClean}</p>
-              </div>
-              <div style={styles.statCard}>
-                <h4>Today's Progress</h4>
-                <p>{stats.todaysProgress}</p>
-              </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-serif font-light text-white mb-2 tracking-tight">
+                Hotel <span style={{ color: customStyles.gold[500] }}>Staff</span> Dashboard
+              </h1>
+              <p className="text-gray-300 font-light text-sm tracking-widest uppercase">Housekeeping & Maintenance System</p>
             </div>
-
-            <div style={styles.quickActions}>
-              <h4>Quick Actions</h4>
-              <div style={styles.actionGrid}>
-                <button 
-                  style={styles.actionBtn}
-                  onClick={() => setActiveTab('assigned')}
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div 
+                  className="p-2 rounded-full"
+                  style={{ backgroundColor: `${customStyles.gold[600]}20` }}
                 >
-                  🏨 View Assigned Rooms
-                </button>
-                <button 
-                  style={styles.actionBtn}
-                  onClick={() => setActiveTab('requests')}
-                >
-                  🧹 Service Requests
-                </button>
-                <button 
-                  style={styles.actionBtn}
-                  onClick={() => setActiveTab('maintenance')}
-                >
-                  🔧 Report Maintenance
-                </button>
-                <button 
-                  style={styles.actionBtn}
-                  onClick={refreshData}
-                >
-                  🔄 Refresh Data
-                </button>
+                  <FaUserCircle className="text-lg" style={{ color: customStyles.gold[600] }} />
+                </div>
+                <div className="text-right">
+                  <p className="text-white font-light text-sm">
+                    Welcome, <span className="font-normal" style={{ color: customStyles.gold[500] }}>{user?.fullName}</span>
+                  </p>
+                  <p className="text-xs text-gray-300 font-light tracking-wider uppercase">
+                    Role: Housekeeping Staff
+                  </p>
+                </div>
               </div>
+              
+              <button
+                onClick={handleLogout}
+                className="group px-4 py-2 text-white font-light text-sm rounded-sm transition-all duration-300 transform hover:scale-105 tracking-wider uppercase relative overflow-hidden border"
+                style={{ 
+                  borderColor: customStyles.gold[600],
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = customStyles.gold[600];
+                  e.currentTarget.style.borderColor = customStyles.gold[600];
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = customStyles.gold[600];
+                }}
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  <FaSignOutAlt />
+                  Logout
+                </span>
+              </button>
             </div>
           </div>
-        );
+        </div>
+      </div>
 
-      case 'assigned':
-        return (
-          <div>
-            <h3>Assigned Rooms</h3>
-            <p style={styles.subtitle}>Rooms assigned to you for cleaning and maintenance</p>
-            
-            <div style={styles.listContainer}>
-              <div style={styles.headerRow}>
-                <h4>Your Rooms ({assignedRooms.length})</h4>
-                <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
+        <FormStatus
+          type={success ? 'success' : 'error'}
+          message={success || error}
+          onClose={() => {
+            setSuccess('');
+            setError('');
+          }}
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {/* Stats Overview - Only show on dashboard tab */}
+        {activeTab === 'dashboard' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div 
+              className={tableContainerClasses}
+              style={{ borderLeft: `4px solid ${customStyles.gold[600]}` }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.borderLeftColor = customStyles.navy[600];
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderLeftColor = customStyles.gold[600];
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 rounded-full" style={{ backgroundColor: `${customStyles.gold[600]}20` }}>
+                  <FaBed className="text-xl" style={{ color: customStyles.gold[600] }} />
+                </div>
               </div>
-              {loading ? (
-                <div style={styles.loading}>Loading rooms...</div>
-              ) : assignedRooms.length === 0 ? (
-                <div style={styles.noData}>No rooms assigned</div>
+              <p className="text-gray-600 text-xs font-light tracking-widest uppercase mb-2">Assigned Rooms</p>
+              <p className="text-2xl font-light" style={{ color: customStyles.navy[900] }}>{calculateDashboardStats().assignedRooms}</p>
+            </div>
+            
+            <div 
+              className={tableContainerClasses}
+              style={{ borderLeft: `4px solid ${customStyles.navy[600]}` }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.borderLeftColor = customStyles.gold[600];
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderLeftColor = customStyles.navy[600];
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 rounded-full" style={{ backgroundColor: `${customStyles.navy[600]}20` }}>
+                  <FaBroom className="text-xl" style={{ color: customStyles.navy[600] }} />
+                </div>
+              </div>
+              <p className="text-gray-600 text-xs font-light tracking-widest uppercase mb-2">Pending Requests</p>
+              <p className="text-2xl font-light" style={{ color: customStyles.navy[900] }}>{calculateDashboardStats().pendingRequests}</p>
+            </div>
+            
+            <div 
+              className={tableContainerClasses}
+              style={{ borderLeft: `4px solid ${customStyles.gold[600]}` }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.borderLeftColor = customStyles.navy[600];
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderLeftColor = customStyles.gold[600];
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 rounded-full" style={{ backgroundColor: `${customStyles.gold[600]}20` }}>
+                  <FaClipboardCheck className="text-xl" style={{ color: customStyles.gold[600] }} />
+                </div>
+              </div>
+              <p className="text-gray-600 text-xs font-light tracking-widest uppercase mb-2">Rooms to Clean</p>
+              <p className="text-2xl font-light" style={{ color: customStyles.navy[900] }}>{calculateDashboardStats().roomsToClean}</p>
+            </div>
+            
+            <div 
+              className={tableContainerClasses}
+              style={{ borderLeft: `4px solid ${customStyles.navy[600]}` }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.borderLeftColor = customStyles.gold[600];
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderLeftColor = customStyles.navy[600];
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 rounded-full" style={{ backgroundColor: `${customStyles.navy[600]}20` }}>
+                  <FaCalendarCheck className="text-xl" style={{ color: customStyles.navy[600] }} />
+                </div>
+              </div>
+              <p className="text-gray-600 text-xs font-light tracking-widest uppercase mb-2">Today's Progress</p>
+              <p className="text-2xl font-light" style={{ color: customStyles.navy[900] }}>{calculateDashboardStats().todaysProgress}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs Navigation */}
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-3">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`${tabBaseClasses} ${
+                  activeTab === tab.id 
+                    ? tabActiveClasses 
+                    : tabInactiveClasses
+                }`}
+                style={
+                  activeTab === tab.id
+                    ? { 
+                        backgroundColor: customStyles.gold[600],
+                        borderColor: customStyles.gold[600],
+                        color: 'white'
+                      }
+                    : {}
+                }
+                onMouseEnter={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.currentTarget.style.color = customStyles.navy[900];
+                    e.currentTarget.style.borderColor = customStyles.navy[900];
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }
+                }}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <span className="flex items-center gap-2">
+                  {tab.icon}
+                  {tab.label}
+                </span>
+              </button>
+            ))}
+            
+            <button
+              onClick={refreshData}
+              disabled={loading}
+              className="ml-auto group px-4 py-3 text-sm font-medium rounded-sm transition-all duration-300 transform hover:scale-105 tracking-wider uppercase flex items-center gap-2"
+              style={{ 
+                backgroundColor: customStyles.navy[900],
+                color: 'white'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = customStyles.navy[800]}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = customStyles.navy[900]}
+            >
+              <FaSyncAlt className={`${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="mt-6">
+          {loading ? (
+            <div className={tableContainerClasses}>
+              <div className="py-20 text-center">
+                <div className="mx-auto w-8 h-8 border-t-2 border-b-2 rounded-full animate-spin" style={{ borderColor: customStyles.gold[600] }}></div>
+                <p className="mt-4 text-gray-600 font-light">Loading...</p>
+              </div>
+            </div>
+          ) : activeTab === 'dashboard' ? (
+            <div className="space-y-6">
+              {/* Quick Actions */}
+              <div className={tableContainerClasses}>
+                <h3 className="text-xl font-light text-gray-900 mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => setActiveTab('assigned')}
+                    className="group px-4 py-3 text-center rounded-sm transition-all duration-300 transform hover:scale-105"
+                    style={{ 
+                      backgroundColor: customStyles.gold[600],
+                      color: 'white'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[700]}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[600]}
+                  >
+                    <FaBed className="mx-auto mb-2 text-lg" />
+                    <span className="text-sm font-light">View Assigned Rooms</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveTab('requests')}
+                    className="group px-4 py-3 text-center rounded-sm transition-all duration-300 transform hover:scale-105"
+                    style={{ 
+                      backgroundColor: customStyles.navy[600],
+                      color: 'white'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = customStyles.navy[700]}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = customStyles.navy[600]}
+                  >
+                    <FaBroom className="mx-auto mb-2 text-lg" />
+                    <span className="text-sm font-light">Service Requests</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveTab('maintenance')}
+                    className="group px-4 py-3 text-center rounded-sm transition-all duration-300 transform hover:scale-105"
+                    style={{ 
+                      backgroundColor: customStyles.gold[600],
+                      color: 'white'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[700]}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[600]}
+                  >
+                    <FaWrench className="mx-auto mb-2 text-lg" />
+                    <span className="text-sm font-light">Report Maintenance</span>
+                  </button>
+                  
+                  <button
+                    onClick={refreshData}
+                    className="group px-4 py-3 text-center rounded-sm transition-all duration-300 transform hover:scale-105"
+                    style={{ 
+                      backgroundColor: customStyles.navy[600],
+                      color: 'white'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = customStyles.navy[700]}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = customStyles.navy[600]}
+                  >
+                    <FaSyncAlt className="mx-auto mb-2 text-lg" />
+                    <span className="text-sm font-light">Refresh Data</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Permissions Info */}
+              <div className={tableContainerClasses}>
+                <h3 className="text-xl font-light text-gray-900 mb-4">Staff Permissions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-light mb-2" style={{ color: customStyles.gold[700] }}>Allowed Actions:</h4>
+                    <ul className="space-y-1">
+                      <li className="flex items-center gap-2 text-sm font-light text-gray-700">
+                        <FaCheckCircle className="text-green-600" />
+                        View assigned rooms
+                      </li>
+                      <li className="flex items-center gap-2 text-sm font-light text-gray-700">
+                        <FaCheckCircle className="text-green-600" />
+                        Clean and mark rooms
+                      </li>
+                      <li className="flex items-center gap-2 text-sm font-light text-gray-700">
+                        <FaCheckCircle className="text-green-600" />
+                        Report maintenance issues
+                      </li>
+                      <li className="flex items-center gap-2 text-sm font-light text-gray-700">
+                        <FaCheckCircle className="text-green-600" />
+                        Update request status
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-light mb-2" style={{ color: customStyles.navy[700] }}>Restricted Actions:</h4>
+                    <ul className="space-y-1">
+                      <li className="flex items-center gap-2 text-sm font-light text-gray-700">
+                        <FaExclamationTriangle className="text-red-600" />
+                        No booking management
+                      </li>
+                      <li className="flex items-center gap-2 text-sm font-light text-gray-700">
+                        <FaExclamationTriangle className="text-red-600" />
+                        No billing operations
+                      </li>
+                      <li className="flex items-center gap-2 text-sm font-light text-gray-700">
+                        <FaExclamationTriangle className="text-red-600" />
+                        No guest management
+                      </li>
+                      <li className="flex items-center gap-2 text-sm font-light text-gray-700">
+                        <FaExclamationTriangle className="text-red-600" />
+                        No financial reports
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'assigned' ? (
+            <div className={tableContainerClasses}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-light text-gray-900 mb-2">
+                    Assigned Rooms <span className="text-sm font-normal" style={{ color: customStyles.gold[600] }}>({assignedRooms.length})</span>
+                  </h3>
+                  <p className="text-gray-600 font-light text-sm">Rooms assigned to you for cleaning and maintenance</p>
+                </div>
+              </div>
+              
+              {assignedRooms.length === 0 ? (
+                <div className="text-center py-12">
+                  <FaBed className="text-4xl mx-auto mb-4" style={{ color: customStyles.navy[300] }} />
+                  <p className="text-gray-600 font-light">No rooms assigned to you</p>
+                </div>
               ) : (
-                assignedRooms.map(room => (
-                  <div key={room._id} style={styles.roomCard}>
-                    <div style={styles.roomInfo}>
-                      <strong>Room {room.roomNumber}</strong>
-                      <p>Type: {room.roomType}</p>
-                      <p>Status: 
-                        <span style={{
-                          ...styles.statusBadge,
-                          backgroundColor: 
-                            room.roomStatus === 'available' ? '#4CAF50' :
-                            room.roomStatus === 'cleaning' ? '#2196F3' :
-                            room.roomStatus === 'dirty' ? '#FF9800' :
-                            room.roomStatus === 'under maintenance' ? '#F44336' : '#9C27B0'
-                        }}>
-                          {room.roomStatus}
-                        </span>
-                      </p>
-                      <p>Last cleaned: {room.lastCleaned ? 
-                        new Date(room.lastCleaned).toLocaleDateString() : 'Unknown'}</p>
-                    </div>
-                    <div style={styles.roomActions}>
-                      {room.roomStatus === 'dirty' || room.roomStatus === 'cleaning' ? (
-                        <>
-                          <button 
-                            style={styles.completeBtn}
-                            onClick={() => markRoomAsCleaned(room._id)}
-                          >
-                            ✅ Mark as Cleaned
-                          </button>
-                          <button 
-                            style={styles.reportBtn}
-                            onClick={() => {
-                              setNewMaintenance({
-                                ...newMaintenance,
-                                roomNumber: room.roomNumber
-                              });
-                              setActiveTab('maintenance');
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {assignedRooms.map(room => (
+                    <div 
+                      key={room._id}
+                      className="rounded-sm border p-5 bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-300"
+                      style={{ borderColor: customStyles.navy[200] }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{ 
+                              backgroundColor: `${customStyles.gold[600]}20`,
+                              color: customStyles.gold[700]
                             }}
                           >
-                            🔧 Report Issue
-                          </button>
-                        </>
-                      ) : room.roomStatus === 'available' ? (
-                        <button 
-                          style={styles.dirtyBtn}
-                          onClick={() => markRoomAsDirty(room._id)}
-                        >
-                          🧹 Needs Cleaning
-                        </button>
-                      ) : (
-                        <span style={styles.inProgress}>Action in progress...</span>
-                      )}
+                            <FaBed className="text-lg" />
+                          </div>
+                          <div>
+                            <h4 className="text-base font-light" style={{ color: customStyles.navy[900] }}>
+                              Room {room.roomNumber}
+                            </h4>
+                            <p className="text-sm text-gray-600 font-light">{room.roomType}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-light text-gray-700">Status:</span>
+                          <span className={`${badgeBaseClasses} ${
+                            room.roomStatus === 'available'
+                              ? 'bg-green-600'
+                              : room.roomStatus === 'cleaning'
+                              ? 'bg-blue-600'
+                              : room.roomStatus === 'dirty'
+                              ? 'bg-amber-500'
+                              : room.roomStatus === 'under maintenance'
+                              ? 'bg-red-600'
+                              : 'bg-purple-600'
+                          }`}>
+                            {room.roomStatus || 'unknown'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-light text-gray-700">Availability:</span>
+                          <span className={`text-xs font-light tracking-wider px-2 py-1 rounded-sm ${
+                            room.isAvailable ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {room.isAvailable ? 'Available' : 'Unavailable'}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-700 font-light">
+                          <span className="flex items-center gap-2">
+                            <FaClock className="text-gray-500" />
+                            Last cleaned: {room.lastCleaned ? new Date(room.lastCleaned).toLocaleDateString() : 'Unknown'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2 pt-3">
+                          {(room.roomStatus === 'dirty' || room.roomStatus === 'cleaning') && (
+                            <>
+                              <button
+                                className="px-3 py-2 text-sm font-medium rounded-sm transition-all duration-300 transform hover:scale-105"
+                                style={{ 
+                                  backgroundColor: customStyles.gold[600],
+                                  color: 'white'
+                                }}
+                                onClick={() => markRoomAsCleaned(room._id)}
+                              >
+                                Mark as Cleaned
+                              </button>
+                              <button
+                                className="px-3 py-2 text-sm font-medium rounded-sm transition-all duration-300 transform hover:scale-105 border"
+                                style={{ 
+                                  borderColor: customStyles.navy[600],
+                                  color: customStyles.navy[600],
+                                  backgroundColor: 'transparent'
+                                }}
+                                onClick={() => {
+                                  setNewMaintenance({
+                                    ...newMaintenance,
+                                    roomNumber: room.roomNumber
+                                  });
+                                  setActiveTab('maintenance');
+                                }}
+                              >
+                                Report Issue
+                              </button>
+                            </>
+                          )}
+                          {room.roomStatus === 'available' && (
+                            <button
+                              className="px-3 py-2 text-sm font-medium rounded-sm transition-all duration-300 transform hover:scale-105 border"
+                              style={{ 
+                                borderColor: customStyles.navy[600],
+                                color: customStyles.navy[600],
+                                backgroundColor: 'transparent'
+                              }}
+                              onClick={() => markRoomAsDirty(room._id)}
+                            >
+                              Mark as Needs Cleaning
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-        );
-
-      case 'requests':
-        return (
-          <div>
-            <h3>Service Requests</h3>
-            <p style={styles.subtitle}>Housekeeping and cleaning requests assigned to you</p>
-            
-            <div style={styles.listContainer}>
-              <div style={styles.headerRow}>
-                <h4>Your Requests ({serviceRequests.length})</h4>
-                <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+          ) : activeTab === 'requests' ? (
+            <div className={tableContainerClasses}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-light text-gray-900 mb-2">
+                    Service Requests <span className="text-sm font-normal" style={{ color: customStyles.gold[600] }}>({serviceRequests.length})</span>
+                  </h3>
+                  <p className="text-gray-600 font-light text-sm">Housekeeping and cleaning requests assigned to you</p>
+                </div>
               </div>
-              {loading ? (
-                <div style={styles.loading}>Loading requests...</div>
-              ) : serviceRequests.length === 0 ? (
-                <div style={styles.noData}>No service requests</div>
+              
+              {serviceRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <FaBroom className="text-4xl mx-auto mb-4" style={{ color: customStyles.navy[300] }} />
+                  <p className="text-gray-600 font-light">No service requests found</p>
+                </div>
               ) : (
-                serviceRequests.map(req => (
-                  <div key={req._id} style={styles.requestCard}>
-                    <div style={styles.requestInfo}>
-                      <strong>{req.serviceType?.toUpperCase()}</strong>
-                      <p>Room: {req.roomNumber}</p>
-                      <p>{req.description}</p>
-                      <p>Priority: 
-                        <span style={{
-                          color: req.priority === 'urgent' ? '#F44336' :
-                                 req.priority === 'high' ? '#FF9800' :
-                                 req.priority === 'medium' ? '#2196F3' : '#4CAF50'
-                        }}>
-                          {' ' + req.priority}
-                        </span>
-                      </p>
-                      <small>
-                        Requested: {req.createdAt ? 
-                        new Date(req.createdAt).toLocaleDateString() : 'Unknown'}
-                      </small>
-                    </div>
-                    <div style={styles.requestActions}>
-                      <span style={{
-                        ...styles.statusBadge,
-                        backgroundColor: 
-                          req.status === 'completed' ? '#4CAF50' :
-                          req.status === 'in_progress' ? '#2196F3' :
-                          req.status === 'pending' ? '#FF9800' : '#F44336'
-                      }}>
-                        {req.status}
-                      </span>
-                      <div style={styles.statusButtons}>
+                <div className="space-y-4">
+                  {serviceRequests.map(req => (
+                    <div key={req._id} className={listCardClasses} style={{ borderColor: customStyles.navy[200] }}>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{ 
+                              backgroundColor: `${customStyles.gold[600]}20`,
+                              color: customStyles.gold[700]
+                            }}
+                          >
+                            <FaBroom className="text-lg" />
+                          </div>
+                          <div>
+                            <h4 className="text-base font-light" style={{ color: customStyles.navy[900] }}>
+                              {req.serviceType?.toUpperCase() || 'HOUSEKEEPING'}
+                            </h4>
+                            <p className="text-sm text-gray-600 font-light">Room: {req.roomNumber}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 font-light">{req.description}</p>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-light">
+                            Priority: 
+                            <span className={`ml-1 ${
+                              req.priority === 'urgent'
+                                ? 'text-red-600'
+                                : req.priority === 'high'
+                                ? 'text-amber-600'
+                                : req.priority === 'medium'
+                                ? 'text-blue-600'
+                                : 'text-green-600'
+                            }`}>
+                              {req.priority || 'normal'}
+                            </span>
+                          </span>
+                          <span className={`${badgeBaseClasses} ${
+                            req.status === 'completed'
+                              ? 'bg-green-600'
+                              : req.status === 'in_progress'
+                              ? 'bg-blue-600'
+                              : req.status === 'pending'
+                              ? 'bg-amber-500'
+                              : 'bg-red-600'
+                          }`}>
+                            {req.status || 'pending'}
+                          </span>
+                        </div>
+                        <small className="text-xs text-gray-500 font-light">
+                          Requested: {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Unknown'}
+                        </small>
+                      </div>
+                      <div className="flex flex-col gap-2 min-w-[120px]">
                         {req.status !== 'completed' && (
-                          <button 
-                            style={styles.completeBtn}
+                          <button
+                            className="px-3 py-2 text-sm font-medium rounded-sm transition-all duration-300 transform hover:scale-105"
+                            style={{ 
+                              backgroundColor: customStyles.gold[600],
+                              color: 'white'
+                            }}
                             onClick={() => updateRequestStatus(req._id, 'completed')}
                           >
-                            ✅ Complete
+                            Complete
                           </button>
                         )}
                         {req.status === 'pending' && (
-                          <button 
-                            style={styles.progressBtn}
+                          <button
+                            className="px-3 py-2 text-sm font-medium rounded-sm transition-all duration-300 transform hover:scale-105 border"
+                            style={{ 
+                              borderColor: customStyles.navy[600],
+                              color: customStyles.navy[600],
+                              backgroundColor: 'transparent'
+                            }}
                             onClick={() => updateRequestStatus(req._id, 'in_progress')}
                           >
-                            ⏳ Start
+                            Start Task
                           </button>
                         )}
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-        );
-
-      case 'maintenance':
-        return (
-          <div>
-            <h3>Maintenance Reports</h3>
-            <p style={styles.subtitle}>Report maintenance issues and track repairs</p>
-            
-            <form onSubmit={submitMaintenanceReport} style={styles.form}>
-              <h4>Report New Maintenance Issue</h4>
-              <input 
-                style={styles.input} 
-                placeholder="Room Number" 
-                value={newMaintenance.roomNumber}
-                onChange={e => setNewMaintenance({...newMaintenance, roomNumber: e.target.value})} 
-                required 
-              />
-              <select 
-                style={styles.input} 
-                value={newMaintenance.issueType}
-                onChange={e => setNewMaintenance({...newMaintenance, issueType: e.target.value})}
-              >
-                <option value="plumbing">Plumbing</option>
-                <option value="electrical">Electrical</option>
-                <option value="furniture">Furniture</option>
-                <option value="appliance">Appliance</option>
-                <option value="ac">Air Conditioning</option>
-                <option value="heating">Heating</option>
-                <option value="other">Other</option>
-              </select>
-              <textarea 
-                style={styles.textarea} 
-                placeholder="Describe the issue in detail..." 
-                value={newMaintenance.description}
-                onChange={e => setNewMaintenance({...newMaintenance, description: e.target.value})} 
-                required 
-                rows="4"
-              />
-              <select 
-                style={styles.input} 
-                value={newMaintenance.priority}
-                onChange={e => setNewMaintenance({...newMaintenance, priority: e.target.value})}
-              >
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-                <option value="urgent">Urgent</option>
-              </select>
-              <button type="submit" style={styles.submitBtn}>Submit Report</button>
-            </form>
-
-            <div style={styles.listContainer}>
-              <div style={styles.headerRow}>
-                <h4>Maintenance History ({maintenanceReports.length})</h4>
-                <button onClick={refreshData} style={styles.refreshBtn}>🔄 Refresh</button>
+          ) : activeTab === 'maintenance' ? (
+            <div className="space-y-6">
+              {/* Report Form */}
+              <div className={tableContainerClasses}>
+                <div className="flex items-center gap-3 mb-6">
+                  <FaWrench className="text-xl" style={{ color: customStyles.gold[600] }} />
+                  <h3 className="text-xl font-light text-gray-900">Report Maintenance Issue</h3>
+                </div>
+                <form onSubmit={submitMaintenanceReport} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Room Number *</label>
+                    <input 
+                      className={inputClasses}
+                      placeholder="Room Number" 
+                      value={newMaintenance.roomNumber}
+                      onChange={e => setNewMaintenance({...newMaintenance, roomNumber: e.target.value})} 
+                      required 
+                      style={{ borderColor: customStyles.navy[200] }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Issue Type</label>
+                    <select 
+                      className={selectClasses}
+                      value={newMaintenance.issueType}
+                      onChange={e => setNewMaintenance({...newMaintenance, issueType: e.target.value})}
+                      style={{ borderColor: customStyles.navy[200] }}
+                    >
+                      <option value="plumbing">Plumbing</option>
+                      <option value="electrical">Electrical</option>
+                      <option value="furniture">Furniture</option>
+                      <option value="appliance">Appliance</option>
+                      <option value="ac">Air Conditioning</option>
+                      <option value="heating">Heating</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Description *</label>
+                    <textarea 
+                      className={textareaClasses}
+                      placeholder="Describe the issue in detail..." 
+                      value={newMaintenance.description}
+                      onChange={e => setNewMaintenance({...newMaintenance, description: e.target.value})} 
+                      required 
+                      rows="4"
+                      style={{ borderColor: customStyles.navy[200] }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Priority</label>
+                    <select 
+                      className={selectClasses}
+                      value={newMaintenance.priority}
+                      onChange={e => setNewMaintenance({...newMaintenance, priority: e.target.value})}
+                      style={{ borderColor: customStyles.navy[200] }}
+                    >
+                      <option value="low">Low Priority</option>
+                      <option value="normal">Medium Priority</option>
+                      <option value="high">High Priority</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                  <button 
+                    type="submit" 
+                    className={submitButtonClasses}
+                    style={{ backgroundColor: customStyles.gold[600] }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[700]}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[600]}
+                  >
+                    Submit Report
+                  </button>
+                </form>
               </div>
-              {loading ? (
-                <div style={styles.loading}>Loading maintenance reports...</div>
-              ) : maintenanceReports.length === 0 ? (
-                <div style={styles.noData}>No maintenance reports</div>
-              ) : (
-                maintenanceReports.map(report => (
-                  <div key={report._id} style={styles.maintenanceCard}>
-                    <div>
-                      <strong>Room {report.roomNumber}</strong>
-                      <p>Issue: {report.issueType || report.serviceType}</p>
-                      <p>{report.description}</p>
-                      <p>Priority: 
-                        <span style={{
-                          color: report.priority === 'urgent' ? '#F44336' :
-                                 report.priority === 'high' ? '#FF9800' :
-                                 report.priority === 'medium' ? '#2196F3' : '#4CAF50'
-                        }}>
-                          {' ' + (report.priority || 'medium')}
-                        </span>
-                      </p>
-                      <p>Status: 
-                        <span style={{
-                          ...styles.statusBadge,
-                          backgroundColor: 
-                            report.status === 'completed' ? '#4CAF50' :
-                            report.status === 'in_progress' ? '#2196F3' :
-                            report.status === 'pending' ? '#FF9800' : '#F44336'
-                        }}>
-                          {report.status}
-                        </span>
-                      </p>
-                      <small>
-                        Reported: {report.createdAt ? 
-                        new Date(report.createdAt).toLocaleDateString() : 'Unknown'} |
-                        By: {report.reportedBy || 'Staff'}
-                      </small>
-                    </div>
+
+              {/* History */}
+              <div className={tableContainerClasses}>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-light text-gray-900 mb-2">
+                      Maintenance History <span className="text-sm font-normal" style={{ color: customStyles.gold[600] }}>({maintenanceReports.length})</span>
+                    </h3>
                   </div>
-                ))
-              )}
+                </div>
+                
+                {maintenanceReports.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FaTools className="text-4xl mx-auto mb-4" style={{ color: customStyles.navy[300] }} />
+                    <p className="text-gray-600 font-light">No maintenance reports found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {maintenanceReports.map(report => (
+                      <div key={report._id} className={listCardClasses} style={{ borderColor: customStyles.navy[200] }}>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                              style={{ 
+                                backgroundColor: `${customStyles.navy[600]}20`,
+                                color: customStyles.navy[700]
+                              }}
+                            >
+                              <FaTools className="text-lg" />
+                            </div>
+                            <div>
+                              <h4 className="text-base font-light" style={{ color: customStyles.navy[900] }}>
+                                Room {report.roomNumber}
+                              </h4>
+                              <p className="text-sm text-gray-600 font-light">Issue: {report.issueType || report.serviceType}</p>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-700 font-light">{report.description}</p>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm font-light">
+                              Priority: 
+                              <span className={`ml-1 ${
+                                report.priority === 'urgent'
+                                  ? 'text-red-600'
+                                  : report.priority === 'high'
+                                  ? 'text-amber-600'
+                                  : report.priority === 'normal'
+                                  ? 'text-blue-600'
+                                  : 'text-green-600'
+                              }`}>
+                                {report.priority === 'normal' ? 'medium' : report.priority || 'medium'}
+                              </span>
+                            </span>
+                            <span className={`${badgeBaseClasses} ${
+                              report.status === 'completed'
+                                ? 'bg-green-600'
+                                : report.status === 'in_progress'
+                                ? 'bg-blue-600'
+                                : report.status === 'pending'
+                                ? 'bg-amber-500'
+                                : 'bg-red-600'
+                            }`}>
+                              {report.status || 'pending'}
+                            </span>
+                          </div>
+                          <small className="text-xs text-gray-500 font-light">
+                            Reported: {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'Unknown'}
+                            {report.reportedBy && ` | By: ${report.reportedBy}`}
+                          </small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
-
-      default:
-        return <div>Select a menu item</div>;
-    }
-  };
-
-  return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h2>🏨 Hotel Housekeeping Dashboard</h2>
-        <div style={styles.userInfo}>
-          <span>Welcome, {user?.fullName}!</span>
-          <span style={styles.role}>Role: Housekeeping Staff</span>
-          <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
+          ) : null}
         </div>
       </div>
 
-      {error && <div style={styles.errorMessage}>{error}</div>}
-      {success && <div style={styles.successMessage}>{success}</div>}
-
-      <div style={styles.layout}>
-        <div style={styles.sidebar}>
-          <button 
-            style={activeTab === 'dashboard' ? styles.activeTab : styles.tab} 
-            onClick={() => setActiveTab('dashboard')}
-          >
-            📊 Dashboard
-          </button>
-          <button 
-            style={activeTab === 'assigned' ? styles.activeTab : styles.tab} 
-            onClick={() => setActiveTab('assigned')}
-          >
-            🏨 Assigned Rooms
-          </button>
-          <button 
-            style={activeTab === 'requests' ? styles.activeTab : styles.tab} 
-            onClick={() => setActiveTab('requests')}
-          >
-            🧹 Service Requests
-          </button>
-          <button 
-            style={activeTab === 'maintenance' ? styles.activeTab : styles.tab} 
-            onClick={() => setActiveTab('maintenance')}
-          >
-            🔧 Maintenance Reports
-          </button>
-          <div style={styles.sidebarNote}>
-            <p><strong>Staff Permissions:</strong></p>
-            <ul style={styles.permissionList}>
-              <li>✅ View assigned rooms</li>
-              <li>✅ Clean rooms</li>
-              <li>✅ Report maintenance</li>
-              <li>❌ No bookings</li>
-              <li>❌ No billing</li>
-            </ul>
+      {/* Footer */}
+      <div 
+        className="border-t py-6"
+        style={{ 
+          borderColor: customStyles.navy[200],
+          backgroundColor: 'white'
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-gray-600 font-light text-sm">
+              Hotel Management System © {new Date().getFullYear()}
+            </p>
+            <p className="text-gray-600 font-light text-sm">
+              Staff Dashboard v1.0.0
+            </p>
           </div>
-        </div>
-
-        <div style={styles.content}>
-          {renderContent()}
         </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
-    fontFamily: 'Arial, sans-serif'
-  },
-  header: {
-    backgroundColor: '#2c3e50',
-    color: 'white',
-    padding: '20px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap'
-  },
-  userInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '20px',
-    flexWrap: 'wrap'
-  },
-  role: {
-    backgroundColor: '#3498db',
-    padding: '5px 10px',
-    borderRadius: '4px',
-    fontSize: '14px'
-  },
-  logoutBtn: {
-    padding: '8px 16px',
-    backgroundColor: '#e74c3c',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  errorMessage: {
-    backgroundColor: '#ffeaea',
-    color: '#d32f2f',
-    padding: '12px 20px',
-    margin: '0 20px 20px',
-    borderRadius: '4px',
-    borderLeft: '4px solid #d32f2f'
-  },
-  successMessage: {
-    backgroundColor: '#e8f5e9',
-    color: '#2e7d32',
-    padding: '12px 20px',
-    margin: '0 20px 20px',
-    borderRadius: '4px',
-    borderLeft: '4px solid #2e7d32'
-  },
-  layout: {
-    display: 'flex',
-    minHeight: 'calc(100vh - 80px)'
-  },
-  sidebar: {
-    width: '250px',
-    backgroundColor: '#34495e',
-    padding: '20px 0',
-    position: 'relative'
-  },
-  tab: {
-    display: 'block',
-    width: '100%',
-    padding: '15px 20px',
-    backgroundColor: 'transparent',
-    color: 'white',
-    border: 'none',
-    textAlign: 'left',
-    fontSize: '16px',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s',
-    borderLeft: '4px solid transparent'
-  },
-  activeTab: {
-    display: 'block',
-    width: '100%',
-    padding: '15px 20px',
-    backgroundColor: '#2c3e50',
-    color: 'white',
-    border: 'none',
-    textAlign: 'left',
-    fontSize: '16px',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s',
-    borderLeft: '4px solid #3498db'
-  },
-  sidebarNote: {
-    position: 'absolute',
-    bottom: '20px',
-    left: '0',
-    right: '0',
-    padding: '15px',
-    backgroundColor: '#2c3e50',
-    color: 'white',
-    fontSize: '12px',
-    borderTop: '1px solid #4a6278'
-  },
-  permissionList: {
-    listStyle: 'none',
-    padding: '0',
-    margin: '10px 0 0 0',
-    fontSize: '11px'
-  },
-  content: {
-    flex: '1',
-    padding: '30px',
-    overflowY: 'auto'
-  },
-  loading: {
-    textAlign: 'center',
-    padding: '40px',
-    fontSize: '18px',
-    color: '#666'
-  },
-  dashboard: {
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-  },
-  subtitle: {
-    color: '#666',
-    marginBottom: '20px'
-  },
-  stats: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '20px',
-    margin: '20px 0'
-  },
-  statCard: {
-    backgroundColor: '#f8f9fa',
-    padding: '20px',
-    borderRadius: '8px',
-    textAlign: 'center',
-    border: '1px solid #dee2e6',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-  },
-  quickActions: {
-    marginTop: '30px'
-  },
-  actionGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '15px',
-    marginTop: '15px'
-  },
-  actionBtn: {
-    padding: '15px',
-    backgroundColor: '#3498db',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
-    transition: 'transform 0.2s'
-  },
-  headerRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '15px'
-  },
-  refreshBtn: {
-    padding: '8px 15px',
-    backgroundColor: '#3498db',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  listContainer: {
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    marginTop: '20px'
-  },
-  noData: {
-    textAlign: 'center',
-    padding: '40px',
-    color: '#666',
-    fontSize: '16px'
-  },
-  roomCard: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '15px',
-    border: '1px solid #eee',
-    borderRadius: '6px',
-    marginBottom: '10px',
-    backgroundColor: '#fafafa'
-  },
-  requestCard: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '15px',
-    border: '1px solid #eee',
-    borderRadius: '6px',
-    marginBottom: '10px',
-    backgroundColor: '#fafafa'
-  },
-  maintenanceCard: {
-    padding: '15px',
-    border: '1px solid #eee',
-    borderRadius: '6px',
-    marginBottom: '10px',
-    backgroundColor: '#fafafa'
-  },
-  roomInfo: {
-    flex: '1'
-  },
-  requestInfo: {
-    flex: '1'
-  },
-  roomActions: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    minWidth: '150px'
-  },
-  requestActions: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '10px',
-    minWidth: '150px'
-  },
-  statusButtons: {
-    display: 'flex',
-    gap: '10px'
-  },
-  statusBadge: {
-    padding: '5px 10px',
-    borderRadius: '20px',
-    color: 'white',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    display: 'inline-block',
-    marginLeft: '5px'
-  },
-  completeBtn: {
-    padding: '8px 15px',
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  progressBtn: {
-    padding: '8px 15px',
-    backgroundColor: '#2196F3',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  dirtyBtn: {
-    padding: '8px 15px',
-    backgroundColor: '#FF9800',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  reportBtn: {
-    padding: '8px 15px',
-    backgroundColor: '#F44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  inProgress: {
-    color: '#666',
-    fontSize: '14px',
-    fontStyle: 'italic'
-  },
-  form: {
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-  },
-  input: {
-    display: 'block',
-    width: '100%',
-    padding: '10px',
-    margin: '10px 0',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '16px',
-    boxSizing: 'border-box'
-  },
-  textarea: {
-    display: 'block',
-    width: '100%',
-    padding: '10px',
-    margin: '10px 0',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '16px',
-    boxSizing: 'border-box',
-    minHeight: '100px',
-    fontFamily: 'Arial, sans-serif',
-    resize: 'vertical'
-  },
-  submitBtn: {
-    padding: '12px 24px',
-    backgroundColor: '#3498db',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    marginTop: '10px'
-  }
-};
 
 export default StaffDashboard;

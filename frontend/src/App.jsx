@@ -1,63 +1,56 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-// Import Layout Components
 import Header from './component/Header';
 import Footer from './component/Footer';
 
-// Import Auth Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-// Import Dashboard Pages
 import AdminDashboard from './pages/AdminDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 import ReceptionDashboard from './pages/ReceptionDashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import GuestDashboard from './pages/GuestDashboard';
 
-// Import Website Pages
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import RoomsPage from './pages/RoomsPage';
 import ContactPage from './pages/ContactPage';
 import GalleryPage from './pages/GalleryPage';
 
-function App() {
-  // Route protection function with role check
-  const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user'));
-    
-    if (!token) {
-      return <Navigate to="/login" />;
-    }
-    
-    // Check if user role is allowed
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-      return <Navigate to={`/${user?.role}-dashboard`} />;
-    }
-    
-    return children;
-  };
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user'));
+  
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
+    return <Navigate to={`/${user?.role}-dashboard`} />;
+  }
+  
+  return children;
+};
 
-  // Layout wrapper for public pages
-  const PublicLayout = ({ children }) => (
-    <div style={styles.app}>
-      <Header />
-      <main style={styles.main}>
-        {children}
-      </main>
-      <Footer />
-    </div>
-  );
-
-  // Dashboard layout (no header/footer)
-  const DashboardLayout = ({ children }) => (
-    <div style={styles.dashboardApp}>
+const PublicLayout = ({ children }) => (
+  <div style={styles.app}>
+    <Header />
+    <main style={styles.main}>
       {children}
-    </div>
-  );
+    </main>
+    <Footer />
+  </div>
+);
+
+const DashboardLayout = ({ children }) => (
+  <div style={styles.dashboardApp}>
+    {children}
+  </div>
+);
+
+function App() {
 
   return (
     <Router>
@@ -129,30 +122,22 @@ function App() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
-        
-        {/* <Route path="/guest-dashboard" element={
-          <ProtectedRoute allowedRoles={['guest']}>
+
+        <Route path="/user-dashboard" element={
+          <ProtectedRoute allowedRoles={['user']}>
             <DashboardLayout>
               <GuestDashboard />
             </DashboardLayout>
           </ProtectedRoute>
-        } /> */}
-        // Add this route in App.jsx
-<Route path="/user-dashboard" element={
-  <ProtectedRoute allowedRoles={['user']}>
-    <DashboardLayout>
-      <GuestDashboard />
-    </DashboardLayout>
-  </ProtectedRoute>
-} />
+        } />
 
         <Route path="/guest-dashboard" element={
-  <ProtectedRoute allowedRoles={['guest', 'user']}>
-    <DashboardLayout>
-      <GuestDashboard />
-    </DashboardLayout>
-  </ProtectedRoute>
-} />
+          <ProtectedRoute allowedRoles={['guest', 'user']}>
+            <DashboardLayout>
+              <GuestDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
         
         {/* Dynamic dashboard route - redirects to role-specific dashboard */}
         <Route path="/dashboard" element={

@@ -1,16 +1,140 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 function RoomsPage() {
   const [filter, setFilter] = useState('all');
+  const [selectedRoom, setSelectedRoom] = useState(null);
   
+  const customColors = {
+    navy: {
+      50: '#f0f4f8',
+      100: '#d9e2ec',
+      200: '#bcccdc',
+      300: '#9fb3c8',
+      400: '#829ab1',
+      500: '#627d98',
+      600: '#486581',
+      700: '#334e68',
+      800: '#243b53',
+      900: '#102a43',
+    },
+    gold: {
+      50: '#fff9e6',
+      100: '#ffefbf',
+      200: '#ffe599',
+      300: '#ffdb73',
+      400: '#ffd14d',
+      500: '#c7a53f',
+      600: '#b89434',
+      700: '#9e7b2e',
+      800: '#856328',
+      900: '#6c4c22',
+    }
+  };
+
   const rooms = [
-    { id: 1, name: "Standard Room", type: "standard", price: "$99/night", size: "300 sq ft", beds: "1 Queen", amenities: ["WiFi", "TV", "AC"], image: "https://via.placeholder.com/400x300" },
-    { id: 2, name: "Deluxe Room", type: "deluxe", price: "$150/night", size: "400 sq ft", beds: "1 King", amenities: ["WiFi", "TV", "AC", "Minibar"], image: "https://via.placeholder.com/400x300" },
-    { id: 3, name: "Executive Suite", type: "suite", price: "$250/night", size: "600 sq ft", beds: "1 King + Sofa", amenities: ["WiFi", "TV", "AC", "Minibar", "Jacuzzi"], image: "https://via.placeholder.com/400x300" },
-    { id: 4, name: "Presidential Suite", type: "suite", price: "$500/night", size: "1000 sq ft", beds: "2 Kings", amenities: ["WiFi", "TV", "AC", "Minibar", "Jacuzzi", "Butler"], image: "https://via.placeholder.com/400x300" },
-    { id: 5, name: "Family Room", type: "family", price: "$180/night", size: "450 sq ft", beds: "2 Queens", amenities: ["WiFi", "TV", "AC", "Kids Area"], image: "https://via.placeholder.com/400x300" },
-    { id: 6, name: "Honeymoon Suite", type: "suite", price: "$350/night", size: "550 sq ft", beds: "1 King", amenities: ["WiFi", "TV", "AC", "Minibar", "Romantic Decor"], image: "https://via.placeholder.com/400x300" }
+    { 
+      id: 1, 
+      name: "Standard Room", 
+      type: "standard", 
+      price: "$99/night", 
+      size: "300 sq ft", 
+      beds: "1 Queen Bed", 
+      capacity: "2 Adults",
+      view: "City View",
+      amenities: ["Free WiFi", "Flat-screen TV", "Air Conditioning", "Coffee Maker", "Safe", "Work Desk"],
+      description: "Our cozy Standard Room offers comfortable accommodation with essential amenities for a pleasant stay. Perfect for business travelers and solo adventurers.",
+      image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1566665797739-1674de7a421a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ]
+    },
+    { 
+      id: 2, 
+      name: "Deluxe Room", 
+      type: "deluxe", 
+      price: "$150/night", 
+      size: "400 sq ft", 
+      beds: "1 King Bed", 
+      capacity: "2 Adults",
+      view: "Garden View",
+      amenities: ["Free WiFi", "Smart TV", "Air Conditioning", "Mini Bar", "Coffee Maker", "Safe", "Work Desk", "Sitting Area"],
+      description: "Spacious Deluxe Room with elegant decor and additional seating area for your comfort. Features premium furnishings and enhanced amenities.",
+      image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ]
+    },
+    { 
+      id: 3, 
+      name: "Executive Suite", 
+      type: "suite", 
+      price: "$250/night", 
+      size: "600 sq ft", 
+      beds: "1 King Bed + Sofa Bed", 
+      capacity: "3 Adults",
+      view: "Ocean View",
+      amenities: ["Free WiFi", "Smart TV", "Air Conditioning", "Mini Bar", "Jacuzzi", "Coffee Maker", "Safe", "Work Desk", "Separate Living Area", "Dining Table"],
+      description: "Luxurious suite with separate living area, perfect for business travelers or extended stays. Offers panoramic ocean views and premium services.",
+      image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1566665797739-1674de7a421a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1615873968403-89e068629265?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ]
+    },
+    { 
+      id: 4, 
+      name: "Presidential Suite", 
+      type: "suite", 
+      price: "$500/night", 
+      size: "1000 sq ft", 
+      beds: "2 King Beds", 
+      capacity: "4 Adults",
+      view: "Panoramic City View",
+      amenities: ["Free WiFi", "Smart TVs (2)", "Air Conditioning", "Full Bar", "Jacuzzi", "Coffee Maker", "Safe", "Work Desk", "Separate Living Area", "Dining Area", "Kitchenette", "Butler Service", "Private Balcony"],
+      description: "Our most luxurious accommodation featuring expansive space, premium amenities, and exclusive services. Experience ultimate luxury and privacy.",
+      image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1615873968403-89e068629265?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ]
+    },
+    { 
+      id: 5, 
+      name: "Family Room", 
+      type: "family", 
+      price: "$180/night", 
+      size: "450 sq ft", 
+      beds: "2 Queen Beds", 
+      capacity: "4 Adults",
+      view: "Pool View",
+      amenities: ["Free WiFi", "Smart TV", "Air Conditioning", "Coffee Maker", "Safe", "Kids Amenities", "Board Games", "Extra Storage"],
+      description: "Perfect for families, featuring two comfortable beds and family-friendly amenities. Spacious layout with convenient access to pool area.",
+      image: "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ]
+    },
+    { 
+      id: 6, 
+      name: "Honeymoon Suite", 
+      type: "suite", 
+      price: "$350/night", 
+      size: "550 sq ft", 
+      beds: "1 King Bed", 
+      capacity: "2 Adults",
+      view: "Romantic Garden View",
+      amenities: ["Free WiFi", "Smart TV", "Air Conditioning", "Mini Bar", "Jacuzzi", "Coffee Maker", "Safe", "Romantic Decor", "Champagne on Arrival", "Flower Arrangement"],
+      description: "Specially designed for couples, featuring romantic decor and special amenities for a memorable stay. Perfect for honeymooners and anniversary celebrations.",
+      image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ]
+    }
   ];
 
   const filteredRooms = filter === 'all' 
@@ -25,304 +149,427 @@ function RoomsPage() {
     { id: 'family', label: 'Family' }
   ];
 
-  return (
-    <div style={styles.container}>
-      {/* Hero Section */}
-      <section style={styles.hero}>
-        <h1 style={styles.heroTitle}>Rooms & Suites</h1>
-        <p style={styles.heroSubtitle}>Choose from our luxurious accommodations</p>
-      </section>
+  const closeDetailView = () => {
+    setSelectedRoom(null);
+  };
 
-      {/* Filters */}
-      <section style={styles.filtersSection}>
-        <div style={styles.filters}>
-          {filters.map(f => (
-            <button
-              key={f.id}
-              style={filter === f.id ? styles.activeFilter : styles.filterButton}
-              onClick={() => setFilter(f.id)}
-            >
-              {f.label}
-            </button>
-          ))}
+  return (
+    <div 
+      className="min-h-screen font-serif"
+      style={{ 
+        background: `linear-gradient(to bottom, ${customColors.navy[50]}, white)`
+      }}
+    >
+      {/* Hero Section */}
+      <div 
+        className="relative overflow-hidden border-b"
+        style={{ borderColor: customColors.navy[200] }}
+      >
+        <div className="absolute inset-0">
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(to right, ${customColors.navy[900]}CC, ${customColors.navy[800]}CC)`
+            }}
+          ></div>
         </div>
-      </section>
+        
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12">
+          <div className="text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-light text-white mb-4 tracking-tight">
+              Hotel <span style={{ color: customColors.gold[500] }}>Rooms</span> & Suites
+            </h1>
+            <p className="text-gray-300 font-light text-sm sm:text-base tracking-widest uppercase max-w-2xl mx-auto">
+              Experience luxury and comfort in our beautifully designed accommodations
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <div className="bg-white/80 backdrop-blur-sm border-b" style={{ borderColor: customColors.navy[200] }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="flex flex-wrap justify-center gap-3">
+            {filters.map(f => (
+              <button
+                key={f.id}
+                className={`px-6 py-3 text-sm font-light tracking-wider uppercase transition-all duration-300 rounded-sm border ${
+                  filter === f.id
+                    ? 'font-normal shadow-lg'
+                    : 'border-gray-300 text-gray-700 hover:text-gray-900'
+                }`}
+                style={
+                  filter === f.id
+                    ? { 
+                        backgroundColor: customColors.gold[600],
+                        borderColor: customColors.gold[600],
+                        color: 'white'
+                      }
+                    : {}
+                }
+                onMouseEnter={(e) => {
+                  if (filter !== f.id) {
+                    e.currentTarget.style.color = customColors.navy[900];
+                    e.currentTarget.style.borderColor = customColors.navy[900];
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (filter !== f.id) {
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }
+                }}
+                onClick={() => setFilter(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Room Detail Modal */}
+      {selectedRoom && (
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={closeDetailView}
+        >
+          <div 
+            className="bg-white rounded-sm shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto relative"
+            onClick={e => e.stopPropagation()}
+            style={{ borderColor: customColors.navy[200] }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={closeDetailView}
+              className="absolute top-6 right-6 text-3xl text-gray-500 hover:text-gray-700 z-10 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              style={{ color: customColors.navy[600] }}
+            >
+              ×
+            </button>
+
+            {/* Modal Header */}
+            <div className="p-8 border-b" style={{ borderColor: customColors.navy[200] }}>
+              <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-2">
+                {selectedRoom.name}
+              </h2>
+              <p className="text-2xl font-light" style={{ color: customColors.gold[600] }}>
+                {selectedRoom.price}
+              </p>
+            </div>
+
+            {/* Image Gallery */}
+            <div className="p-8">
+              <img 
+                src={selectedRoom.image} 
+                alt={selectedRoom.name}
+                className="w-full h-96 object-cover rounded-sm mb-4"
+                style={{ borderColor: customColors.navy[200] }}
+              />
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {selectedRoom.images.map((img, index) => (
+                  <img 
+                    key={index}
+                    src={img}
+                    alt={`${selectedRoom.name} ${index + 1}`}
+                    className="w-24 h-20 object-cover rounded-sm cursor-pointer border-2 hover:opacity-80 transition-opacity"
+                    style={{ borderColor: customColors.navy[200] }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Room Details */}
+            <div className="px-8 pb-8">
+              {/* Description */}
+              <p className="text-gray-600 font-light leading-relaxed mb-8">
+                {selectedRoom.description}
+              </p>
+
+              {/* Specifications Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                <div 
+                  className="p-4 rounded-sm text-center"
+                  style={{ backgroundColor: `${customColors.navy[50]}` }}
+                >
+                  <div className="text-sm font-light mb-1" style={{ color: customColors.navy[600] }}>
+                    Room Size
+                  </div>
+                  <div className="text-lg font-light" style={{ color: customColors.navy[900] }}>
+                    {selectedRoom.size}
+                  </div>
+                </div>
+                <div 
+                  className="p-4 rounded-sm text-center"
+                  style={{ backgroundColor: `${customColors.gold[50]}` }}
+                >
+                  <div className="text-sm font-light mb-1" style={{ color: customColors.gold[600] }}>
+                    Bed Configuration
+                  </div>
+                  <div className="text-lg font-light" style={{ color: customColors.navy[900] }}>
+                    {selectedRoom.beds}
+                  </div>
+                </div>
+                <div 
+                  className="p-4 rounded-sm text-center"
+                  style={{ backgroundColor: `${customColors.navy[50]}` }}
+                >
+                  <div className="text-sm font-light mb-1" style={{ color: customColors.navy[600] }}>
+                    Capacity
+                  </div>
+                  <div className="text-lg font-light" style={{ color: customColors.navy[900] }}>
+                    {selectedRoom.capacity}
+                  </div>
+                </div>
+                <div 
+                  className="p-4 rounded-sm text-center"
+                  style={{ backgroundColor: `${customColors.gold[50]}` }}
+                >
+                  <div className="text-sm font-light mb-1" style={{ color: customColors.gold[600] }}>
+                    View
+                  </div>
+                  <div className="text-lg font-light" style={{ color: customColors.navy[900] }}>
+                    {selectedRoom.view}
+                  </div>
+                </div>
+              </div>
+
+              {/* Amenities */}
+              <div className="mb-8">
+                <h3 className="text-xl font-light mb-4" style={{ color: customColors.navy[900] }}>
+                  Amenities & Features
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {selectedRoom.amenities.map((amenity, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center gap-3 p-3 rounded-sm"
+                      style={{ 
+                        backgroundColor: `${customColors.navy[50]}80`,
+                        border: `1px solid ${customColors.navy[200]}`
+                      }}
+                    >
+                      <div className="w-5 h-5 flex items-center justify-center rounded-full" style={{ backgroundColor: customColors.gold[600], color: 'white' }}>
+                        ✓
+                      </div>
+                      <span className="font-light text-gray-700">{amenity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Additional Info */}
+              <div 
+                className="p-6 rounded-sm"
+                style={{ 
+                  backgroundColor: `${customColors.navy[50]}`,
+                  border: `1px solid ${customColors.navy[200]}`
+                }}
+              >
+                <h3 className="text-lg font-light mb-4" style={{ color: customColors.navy[900] }}>
+                  Additional Information
+                </h3>
+                <ul className="space-y-2">
+                  {[
+                    "Check-in: 3:00 PM | Check-out: 11:00 AM",
+                    "Non-smoking room",
+                    "Daily housekeeping included",
+                    "24/7 room service available",
+                    "Complimentary bottled water",
+                    "Late check-out available upon request"
+                  ].map((item, index) => (
+                    <li key={index} className="flex items-center gap-3 text-gray-600 font-light">
+                      <div className="w-1 h-1 rounded-full" style={{ backgroundColor: customColors.gold[600] }}></div>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rooms Grid */}
-      <section style={styles.roomsSection}>
-        <div style={styles.roomsGrid}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredRooms.map(room => (
-            <div key={room.id} style={styles.roomCard}>
-              <img src={room.image} alt={room.name} style={styles.roomImage} />
-              <div style={styles.roomInfo}>
-                <div style={styles.roomHeader}>
-                  <h3 style={styles.roomName}>{room.name}</h3>
-                  <span style={styles.roomPrice}>{room.price}</span>
+            <div 
+              key={room.id}
+              className="rounded-sm border bg-white/80 backdrop-blur-sm hover:bg-white/90 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl overflow-hidden"
+              style={{ borderColor: customColors.navy[200] }}
+            >
+              {/* Room Image */}
+              <div className="relative overflow-hidden">
+                <img 
+                  src={room.image} 
+                  alt={room.name}
+                  className="w-full h-56 object-cover transition-transform duration-500 hover:scale-105"
+                />
+                <div 
+                  className="absolute top-4 right-4 px-3 py-1 text-xs font-light tracking-wider uppercase text-white"
+                  style={{ backgroundColor: customColors.gold[600] }}
+                >
+                  {room.type}
                 </div>
-                
-                <div style={styles.roomDetails}>
-                  <div style={styles.detailItem}>
-                    <span style={styles.detailLabel}>Size:</span>
-                    <span style={styles.detailValue}>{room.size}</span>
+              </div>
+
+              {/* Room Info */}
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-xl font-light" style={{ color: customColors.navy[900] }}>
+                    {room.name}
+                  </h3>
+                  <p className="text-lg font-light whitespace-nowrap" style={{ color: customColors.gold[600] }}>
+                    {room.price}
+                  </p>
+                </div>
+
+                <div className="flex gap-6 mb-4 pb-4 border-b" style={{ borderColor: customColors.navy[200] }}>
+                  <div>
+                    <div className="text-xs font-light tracking-wider uppercase mb-1" style={{ color: customColors.navy[600] }}>
+                      Size
+                    </div>
+                    <div className="font-light" style={{ color: customColors.navy[900] }}>
+                      {room.size}
+                    </div>
                   </div>
-                  <div style={styles.detailItem}>
-                    <span style={styles.detailLabel}>Beds:</span>
-                    <span style={styles.detailValue}>{room.beds}</span>
+                  <div>
+                    <div className="text-xs font-light tracking-wider uppercase mb-1" style={{ color: customColors.navy[600] }}>
+                      Beds
+                    </div>
+                    <div className="font-light" style={{ color: customColors.navy[900] }}>
+                      {room.beds}
+                    </div>
                   </div>
                 </div>
 
-                <div style={styles.amenities}>
-                  <p style={styles.amenitiesTitle}>Amenities:</p>
-                  <div style={styles.amenitiesList}>
-                    {room.amenities.map((amenity, index) => (
-                      <span key={index} style={styles.amenityTag}>
+                <div className="mb-6">
+                  <div className="text-sm font-light mb-3" style={{ color: customColors.navy[900] }}>
+                    Key Amenities
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {room.amenities.slice(0, 3).map((amenity, index) => (
+                      <span 
+                        key={index}
+                        className="px-3 py-1 text-xs font-light rounded-sm"
+                        style={{ 
+                          backgroundColor: `${customColors.navy[50]}`,
+                          color: customColors.navy[700],
+                          border: `1px solid ${customColors.navy[200]}`
+                        }}
+                      >
                         {amenity}
                       </span>
                     ))}
+                    {room.amenities.length > 3 && (
+                      <span 
+                        className="px-3 py-1 text-xs font-light rounded-sm"
+                        style={{ 
+                          backgroundColor: `${customColors.gold[50]}`,
+                          color: customColors.gold[700],
+                          border: `1px solid ${customColors.gold[200]}`
+                        }}
+                      >
+                        +{room.amenities.length - 3} more
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div style={styles.roomActions}>
-                  <Link 
-                    to="/register" 
-                    style={styles.bookButton}
-                  >
-                    Book Now
-                  </Link>
-                  <button style={styles.detailsButton}>
-                    View Details
-                  </button>
-                </div>
+                <button
+                  onClick={() => setSelectedRoom(room)}
+                  className="w-full px-6 py-3 text-sm font-medium text-white rounded-sm transition-all duration-300 transform hover:scale-105 tracking-wider uppercase relative overflow-hidden hover:shadow-lg"
+                  style={{ backgroundColor: customColors.navy[900] }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = customColors.navy[800]}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = customColors.navy[900]}
+                >
+                  View Details
+                </button>
               </div>
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      {/* Features */}
-      <section style={styles.featuresSection}>
-        <h2 style={styles.sectionTitle}>Room Features</h2>
-        
-        <div style={styles.featuresGrid}>
-          <div style={styles.feature}>
-            <div style={styles.featureIcon}>🛏️</div>
-            <h4>Luxury Bedding</h4>
-            <p>Premium mattresses and linens</p>
-          </div>
-          <div style={styles.feature}>
-            <div style={styles.featureIcon}>🚿</div>
-            <h4>Spa Bathrooms</h4>
-            <p>Rain showers and premium toiletries</p>
-          </div>
-          <div style={styles.feature}>
-            <div style={styles.featureIcon}>📶</div>
-            <h4>High-Speed WiFi</h4>
-            <p>Complimentary high-speed internet</p>
-          </div>
-          <div style={styles.feature}>
-            <div style={styles.featureIcon}>🍽️</div>
-            <h4>Room Service</h4>
-            <p>24/7 dining options</p>
+      {/* Features Section */}
+      <div 
+        className="border-t py-12"
+        style={{ 
+          borderColor: customColors.navy[200],
+          backgroundColor: 'white'
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl font-light text-center mb-12" style={{ color: customColors.navy[900] }}>
+            Why Choose Our Rooms
+          </h2>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { icon: '⭐', title: 'Premium Quality', desc: 'Highest quality furnishings and decor for ultimate comfort' },
+              { icon: '🛌', title: 'Luxury Bedding', desc: 'Premium mattresses and linens for restful sleep' },
+              { icon: '🚿', title: 'Spa Bathrooms', desc: 'Rain showers and premium toiletries' },
+              { icon: '📶', title: 'High-Speed WiFi', desc: 'Complimentary high-speed internet access' }
+            ].map((feature, index) => (
+              <div 
+                key={index}
+                className="text-center p-6 rounded-sm border transition-all duration-300 hover:shadow-lg"
+                style={{ 
+                  borderColor: customColors.navy[200],
+                  backgroundColor: `${customColors.navy[50]}80`
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.borderColor = customColors.gold[600];
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = customColors.navy[200];
+                }}
+              >
+                <div 
+                  className="text-3xl mb-4 w-16 h-16 flex items-center justify-center rounded-full mx-auto"
+                  style={{ 
+                    backgroundColor: `${customColors.gold[600]}20`,
+                    color: customColors.gold[600]
+                  }}
+                >
+                  {feature.icon}
+                </div>
+                <h4 className="text-lg font-light mb-2" style={{ color: customColors.navy[900] }}>
+                  {feature.title}
+                </h4>
+                <p className="text-gray-600 font-light text-sm">
+                  {feature.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
-      </section>
+      </div>
+
+      {/* Footer */}
+      <div 
+        className="border-t py-6"
+        style={{ 
+          borderColor: customColors.navy[200],
+          backgroundColor: 'white'
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-gray-600 font-light text-sm">
+              Hotel Management System © {new Date().getFullYear()}
+            </p>
+            <p className="text-gray-600 font-light text-sm">
+              Rooms & Suites v1.0.0
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: '100vh'
-  },
-  hero: {
-    background: 'linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(https://via.placeholder.com/1920x600)',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    height: '50vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    textAlign: 'center',
-    padding: '20px'
-  },
-  heroTitle: {
-    fontSize: '3rem',
-    marginBottom: '20px'
-  },
-  heroSubtitle: {
-    fontSize: '1.5rem',
-    opacity: '0.9'
-  },
-  filtersSection: {
-    backgroundColor: '#f8f9fa',
-    padding: '30px 20px'
-  },
-  filters: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '15px',
-    flexWrap: 'wrap',
-    maxWidth: '1200px',
-    margin: '0 auto'
-  },
-  filterButton: {
-    padding: '12px 30px',
-    border: '2px solid #ddd',
-    backgroundColor: 'white',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    transition: 'all 0.3s'
-  },
-  activeFilter: {
-    padding: '12px 30px',
-    backgroundColor: '#2c3e50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontSize: '16px'
-  },
-  roomsSection: {
-    padding: '80px 20px',
-    maxWidth: '1200px',
-    margin: '0 auto'
-  },
-  roomsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-    gap: '40px'
-  },
-  roomCard: {
-    backgroundColor: 'white',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-    transition: 'transform 0.3s'
-  },
-  roomImage: {
-    width: '100%',
-    height: '250px',
-    objectFit: 'cover'
-  },
-  roomInfo: {
-    padding: '25px'
-  },
-  roomHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px'
-  },
-  roomName: {
-    fontSize: '1.5rem',
-    color: '#2c3e50',
-    margin: 0
-  },
-  roomPrice: {
-    fontSize: '1.3rem',
-    color: '#f39c12',
-    fontWeight: 'bold'
-  },
-  roomDetails: {
-    display: 'flex',
-    gap: '30px',
-    marginBottom: '20px',
-    paddingBottom: '20px',
-    borderBottom: '1px solid #eee'
-  },
-  detailItem: {
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  detailLabel: {
-    fontSize: '0.9rem',
-    color: '#7f8c8d',
-    marginBottom: '5px'
-  },
-  detailValue: {
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    color: '#2c3e50'
-  },
-  amenities: {
-    marginBottom: '25px'
-  },
-  amenitiesTitle: {
-    fontSize: '1rem',
-    color: '#2c3e50',
-    marginBottom: '10px',
-    fontWeight: 'bold'
-  },
-  amenitiesList: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '8px'
-  },
-  amenityTag: {
-    backgroundColor: '#f8f9fa',
-    padding: '5px 12px',
-    borderRadius: '20px',
-    fontSize: '0.9rem',
-    color: '#555'
-  },
-  roomActions: {
-    display: 'flex',
-    gap: '15px'
-  },
-  bookButton: {
-    flex: 1,
-    padding: '12px',
-    backgroundColor: '#f39c12',
-    color: 'white',
-    textDecoration: 'none',
-    textAlign: 'center',
-    borderRadius: '5px',
-    fontWeight: 'bold',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '16px'
-  },
-  detailsButton: {
-    flex: 1,
-    padding: '12px',
-    backgroundColor: '#2c3e50',
-    color: 'white',
-    borderRadius: '5px',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '16px'
-  },
-  featuresSection: {
-    backgroundColor: '#f8f9fa',
-    padding: '80px 20px'
-  },
-  sectionTitle: {
-    fontSize: '2.5rem',
-    textAlign: 'center',
-    marginBottom: '50px',
-    color: '#2c3e50'
-  },
-  featuresGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '30px',
-    maxWidth: '1200px',
-    margin: '0 auto'
-  },
-  feature: {
-    textAlign: 'center',
-    padding: '30px',
-    backgroundColor: 'white',
-    borderRadius: '10px',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
-  },
-  featureIcon: {
-    fontSize: '3rem',
-    marginBottom: '20px'
-  }
-};
 
 export default RoomsPage;

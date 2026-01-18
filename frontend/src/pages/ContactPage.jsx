@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaPaperPlane, FaCheckCircle, FaBuilding, FaCalendarAlt, FaUserTie, FaQuestionCircle, FaCar, FaPaw, FaUtensils, FaParking, FaWifi, FaConciergeBell } from 'react-icons/fa';
+import FormStatus from '../component/FormStatus';
 
 function ContactPage() {
+  const API_URL = 'http://localhost:5001/api';
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -13,6 +16,21 @@ function ContactPage() {
 
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    phone: false,
+    subject: false,
+    message: false
+  });
 
   const customStyles = {
     navy: {
@@ -41,20 +59,150 @@ function ContactPage() {
     }
   };
 
+  const validationRules = {
+    name: {
+      required: 'Full name is required',
+      minLength: 2,
+      minLengthMessage: 'Full name must be at least 2 characters',
+      maxLength: 100,
+      maxLengthMessage: 'Full name cannot exceed 100 characters'
+    },
+    email: {
+      required: 'Email is required',
+      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: 'Please enter a valid email address',
+      maxLength: 100,
+      maxLengthMessage: 'Email cannot exceed 100 characters'
+    },
+    phone: {
+      pattern: /^[0-9+\-\s()]{7,20}$/,
+      message: 'Please enter a valid phone number'
+    },
+    subject: {
+      required: 'Subject is required',
+      minLength: 3,
+      minLengthMessage: 'Subject must be at least 3 characters',
+      maxLength: 120,
+      maxLengthMessage: 'Subject cannot exceed 120 characters'
+    },
+    message: {
+      required: 'Message is required',
+      minLength: 10,
+      minLengthMessage: 'Message must be at least 10 characters',
+      maxLength: 2000,
+      maxLengthMessage: 'Message cannot exceed 2000 characters'
+    }
+  };
+
+  const validateField = (name, value) => {
+    const rules = validationRules[name];
+    if (!rules) {
+      return '';
+    }
+
+    const trimmedValue = typeof value === 'string' ? value.trim() : value;
+
+    if (rules.required && !trimmedValue) {
+      return rules.required;
+    }
+
+    if (trimmedValue && rules.pattern && !rules.pattern.test(trimmedValue)) {
+      return rules.message || rules.patternMessage;
+    }
+
+    if (rules.minLength && trimmedValue.length < rules.minLength) {
+      return rules.minLengthMessage;
+    }
+
+    if (rules.maxLength && trimmedValue.length > rules.maxLength) {
+      return rules.maxLengthMessage;
+    }
+
+    return '';
+  };
+
+  const validateForm = () => {
+    const errors = {
+      name: validateField('name', formData.name),
+      email: validateField('email', formData.email),
+      phone: validateField('phone', formData.phone),
+      subject: validateField('subject', formData.subject),
+      message: validateField('message', formData.message)
+    };
+
+    setFieldErrors(errors);
+
+    return !errors.name &&
+      !errors.email &&
+      !errors.phone &&
+      !errors.subject &&
+      !errors.message;
+  };
+
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    if (touched[name]) {
+      const errorMessage = validateField(name, value);
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: errorMessage
+      }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+
+    const errorMessage = validateField(name, value);
+    setFieldErrors(prev => ({
+      ...prev,
+      [name]: errorMessage
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setTouched({
+      name: true,
+      email: true,
+      phone: true,
+      subject: true,
+      message: true
+    });
+
+    const isValid = validateForm();
+    if (!isValid) {
+      setError('Please fix the errors in the form before submitting.');
+      return;
+    }
+
     setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const response = await fetch(`${API_URL}/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send message');
+      }
+
       setSubmitted(true);
       setFormData({
         name: '',
@@ -63,7 +211,25 @@ function ContactPage() {
         subject: '',
         message: ''
       });
-    }, 2000);
+      setFieldErrors({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: ''
+      });
+      setTouched({
+        name: false,
+        email: false,
+        phone: false,
+        subject: false,
+        message: false
+      });
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const contactInfo = [
@@ -446,11 +612,17 @@ function ContactPage() {
                           name="name"
                           value={formData.name}
                           onChange={handleChange}
+                          onBlur={handleBlur}
                           className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:border-gold-500 transition-colors duration-300"
                           style={{ color: customStyles.navy[900] }}
                           required
                           placeholder="John Smith"
                         />
+                        {touched.name && fieldErrors.name && (
+                          <p className="mt-1 text-xs text-red-600">
+                            {fieldErrors.name}
+                          </p>
+                        )}
                       </div>
                       
                       <div>
@@ -462,6 +634,7 @@ function ContactPage() {
                           name="email"
                           value={formData.email}
                           onChange={handleChange}
+                          onBlur={handleBlur}
                           className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:border-gold-500 transition-colors duration-300"
                           style={{ color: customStyles.navy[900] }}
                           required
@@ -479,10 +652,16 @@ function ContactPage() {
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
+                        onBlur={handleBlur}
                         className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:border-gold-500 transition-colors duration-300"
                         style={{ color: customStyles.navy[900] }}
                         placeholder="+1 (234) 567-8900"
                       />
+                      {touched.phone && fieldErrors.phone && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {fieldErrors.phone}
+                        </p>
+                      )}
                     </div>
                     
                     <div className="mt-6">
@@ -493,6 +672,7 @@ function ContactPage() {
                         name="subject"
                         value={formData.subject}
                         onChange={handleChange}
+                        onBlur={handleBlur}
                         className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:border-gold-500 transition-colors duration-300 appearance-none"
                         style={{ color: customStyles.navy[900] }}
                         required
@@ -516,11 +696,17 @@ function ContactPage() {
                         name="message"
                         value={formData.message}
                         onChange={handleChange}
+                        onBlur={handleBlur}
                         className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:border-gold-500 transition-colors duration-300 min-h-[150px] resize-none"
                         style={{ color: customStyles.navy[900] }}
                         required
                         placeholder="Please provide details about your inquiry..."
                       />
+                      {touched.message && fieldErrors.message && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {fieldErrors.message}
+                        </p>
+                      )}
                     </div>
                     
                     <div className="mt-8">
@@ -558,6 +744,11 @@ function ContactPage() {
                           }}
                         ></div>
                       </button>
+                      <FormStatus
+                        type="error"
+                        message={error}
+                        onClose={() => setError('')}
+                      />
                       
                       <p className="text-xs text-gray-500 text-center mt-4">
                         By submitting this form, you agree to our privacy policy

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaUserTag, FaBriefcase, FaArrowRight, FaHotel, FaEye, FaEyeSlash } from 'react-icons/fa';
+import FormStatus from '../component/FormStatus';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -89,7 +90,7 @@ function Register() {
     },
     phone: {
       required: 'Phone number is required',
-      pattern: /^[\+]?[1-9][\d]{0,15}$/,
+      pattern: /^\+?[1-9]\d{0,15}$/,
       message: 'Please enter a valid phone number',
       maxLength: 15,
       maxLengthMessage: 'Phone number cannot exceed 15 digits'
@@ -211,7 +212,7 @@ function Register() {
     setErrors(prev => ({ ...prev, general: '' }));
 
     try {
-      const response = await axios.post('http://localhost:5000/api/register', formData);
+      const response = await axios.post('http://localhost:5001/api/register', formData);
       
       if (response.status === 201) {
         setSuccess('Registration successful! You will be redirected to login shortly.');
@@ -334,28 +335,22 @@ function Register() {
                 </h2>
               </div>
               
-              {/* Messages */}
-              {(error || errors.general) && (
-                <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {error || errors.general}
-                  </div>
-                </div>
-              )}
-              
-              {success && (
-                <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {success}
-                  </div>
-                </div>
-              )}
+              <FormStatus
+                type="error"
+                message={error || errors.general}
+                onClose={() => {
+                  setError('');
+                  setErrors(prev => ({ ...prev, general: '' }));
+                }}
+              />
+
+              <FormStatus
+                type="success"
+                message={success}
+                onClose={() => {
+                  setSuccess('');
+                }}
+              />
               
               <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

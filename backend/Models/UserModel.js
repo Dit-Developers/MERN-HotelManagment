@@ -26,13 +26,17 @@ var userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["admin", "guest","receptionist", "manager", "staff"],
+    enum: ["admin", "guest", "user", "receptionist", "manager", "staff"],
     default: "guest",
   },
   status:{
     type:String,
     enum:["active", "inactive","suspended"],
     default:"active"
+  },
+  preferences:{
+    type:String,
+    default:""
   }
 });
 

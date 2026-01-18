@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaUser, FaHotel, FaShieldAlt, FaArrowRight, FaEye, FaEyeSlash } from 'react-icons/fa';
+import FormStatus from '../component/FormStatus';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -103,25 +104,6 @@ function Login() {
     setErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  // Handle input change with validation
-  const handleInputChange = (field, value) => {
-    if (field === 'email') {
-      setEmail(value);
-      // Clear email error when user starts typing
-      if (touched.email && errors.email) {
-        const error = validateField('email', value);
-        setErrors(prev => ({ ...prev, email: error }));
-      }
-    } else if (field === 'password') {
-      setPassword(value);
-      // Clear password error when user starts typing
-      if (touched.password && errors.password) {
-        const error = validateField('password', value);
-        setErrors(prev => ({ ...prev, password: error }));
-      }
-    }
-  };
-
   // Real-time validation for email on type
   const handleEmailChange = (e) => {
     const value = e.target.value;
@@ -145,23 +127,7 @@ function Login() {
   };
 
   // Check if user is already logged in on component mount
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userString = localStorage.getItem('user');
-    
-    if (token && userString) {
-      try {
-        const user = JSON.parse(userString);
-        // Immediately redirect to dashboard if already logged in
-        redirectToDashboard(user.role);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.clear(); // Clear invalid data
-      }
-    }
-  }, [navigate]);
-
-  const redirectToDashboard = (role) => {
+  const redirectToDashboard = useCallback((role) => {
     switch (role) {
       case 'admin':
         navigate('/admin-dashboard');
@@ -182,7 +148,22 @@ function Login() {
       default:
         navigate('/guest-dashboard');
     } 
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userString = localStorage.getItem('user');
+    
+    if (token && userString) {
+      try {
+        const user = JSON.parse(userString);
+        redirectToDashboard(user.role);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        localStorage.clear();
+      }
+    }
+  }, [redirectToDashboard]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -204,7 +185,7 @@ function Login() {
     setErrors(prev => ({ ...prev, general: '' }));
 
     try {
-      const response = await axios.post('http://localhost:5000/api/login', {
+      const response = await axios.post('http://localhost:5001/api/login', {
         email: email.trim(),
         password: password
       });
@@ -462,27 +443,11 @@ function Login() {
               </button>
             </form>
             
-            {/* Message Display */}
-            {message && (
-              <div className={`mt-6 p-4 rounded-lg text-sm font-medium ${
-                message.includes('successful') 
-                  ? 'bg-green-50 border border-green-200 text-green-700' 
-                  : 'bg-red-50 border border-red-200 text-red-700'
-              }`}>
-                <div className="flex items-center">
-                  {message.includes('successful') ? (
-                    <svg className="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )}
-                  {message}
-                </div>
-              </div>
-            )}
+            <FormStatus
+              type={message && message.includes('successful') ? 'success' : 'error'}
+              message={message}
+              onClose={() => setMessage('')}
+            />
             
             {/* Divider */}
             <div className="relative my-8">
