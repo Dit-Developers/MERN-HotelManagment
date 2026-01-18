@@ -153,15 +153,24 @@ function Register() {
   // Handle input change with validation
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+    let nextValue = value;
+
+    if (name === 'fullName') {
+      nextValue = value.replace(/[^a-zA-Z\s.'-]/g, '');
+    }
+
+    if (name === 'phone') {
+      nextValue = value.replace(/[^0-9+]/g, '');
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: nextValue
     }));
 
     // Clear error when user starts typing
     if (touched[name] && errors[name]) {
-      const error = validateField(name, value);
+      const error = validateField(name, nextValue);
       setErrors(prev => ({ ...prev, [name]: error }));
     }
   };

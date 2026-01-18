@@ -6,17 +6,27 @@ const createReview = async (req, res) => {
     try {
         const { userId, remarks } = req.body;
 
-        const addReview = await reviewModel.create({ userId, remarks });
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required for a review" });
+        }
 
-        if (!addReview) { return res.status(404).json({ message: "Error while creating a review" }); }
+        if (!remarks || typeof remarks !== "string" || !remarks.trim()) {
+            return res.status(400).json({ message: "Review remarks cannot be empty" });
+        }
+
+        const addReview = await reviewModel.create({ userId, remarks: remarks.trim() });
+
+        if (!addReview) {
+            return res.status(404).json({ message: "Error while creating a review" });
+        }
 
         return res.status(200).json({ message: "Review added successfully", addReview });
 
     } catch (error) {
         console.error("Internal server error", error);
-        return res.status(404).json({ message: "Internal server error", error });
+        return res.status(500).json({ message: "Internal server error", error: error.message });
     }
-}
+};
 
 
 // Get all reviews - GET API
@@ -33,10 +43,10 @@ const getAllReviews = async (req, res) => {
 
     } catch (error) {
         console.error("Internal server error", error);
-        return res.status(404).json({ message: "Internal server error", error });
+        return res.status(500).json({ message: "Internal server error", error: error.message });
     }
 
-}
+};
 
 
 // Delete A Review API
@@ -66,7 +76,7 @@ const deleteReview = async (req, res) => {
         console.error("Internal server error", error);
         return res.status(500).json({ message: "Internal server error", error: error.message });
     }
-}
+};
 
 // GET A USERS REVIEWS - GET API
 
@@ -75,14 +85,47 @@ const getUserReviews = async (req, res) => {
 
         const uId = req.params.userId;
         const getReviews = await reviewModel.find({ userId: uId });
-        if (getReviews.length === 0) { return res.status(404).json({ message: "No reviews found" }); }
+        if (getReviews.length === 0) {
+            return res.status(404).json({ message: "No reviews found" });
+        }
 
-        return res.status(200).json({messsage:"Here are all the users reviews", getReviews });
+        return res.status(200).json({ message: "Here are all the user's reviews", getReviews });
 
 
     } catch (error) {
         console.error("Internal server error", error);
-        return res.status(404).json({ message: "Internal server error", error });
+        return res.status(500).json({ message: "Internal server error", error: error.message });
     }
-}
-module.exports = { createReview, getAllReviews, deleteReview, getUserReviews };
+};
+
+const updateReviewStatus = async (req, res) => {
+    try {
+        const { reviewId } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = ["pending", "approved"];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                message: "Invalid status. Must be one of: " + validStatuses.join(", ")
+            });
+        }
+
+        const review = await reviewModel.findById(reviewId);
+        if (!review) {
+            return res.status(404).json({ message: "Review not found" });
+        }
+
+        review.status = status;
+        await review.save();
+
+        return res.status(200).json({
+            message: "Review status updated successfully",
+            review
+        });
+    } catch (error) {
+        console.error("Internal server error", error);
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+module.exports = { createReview, getAllReviews, deleteReview, getUserReviews, updateReviewStatus };

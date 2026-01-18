@@ -1,15 +1,20 @@
 const mongoose = require("mongoose");
 
 const reviewSchema = new mongoose.Schema({
-    userId:{
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"Users"
+        ref: "Users"
     },
-    remarks:{
-        type:String
+    remarks: {
+        type: String
     },
-    createdAt:{
-        type:Date,
+    status: {
+        type: String,
+        enum: ["pending", "approved"],
+        default: "pending"
+    },
+    createdAt: {
+        type: Date,
         default: Date.now
     }
 });

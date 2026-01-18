@@ -993,7 +993,10 @@ function StaffDashboard() {
                       className={inputClasses}
                       placeholder="Room Number" 
                       value={newMaintenance.roomNumber}
-                      onChange={e => setNewMaintenance({...newMaintenance, roomNumber: e.target.value})} 
+                      onChange={e => setNewMaintenance({
+                        ...newMaintenance,
+                        roomNumber: e.target.value.replace(/[^0-9]/g, '')
+                      })} 
                       required 
                       style={{ borderColor: customStyles.navy[200] }}
                     />

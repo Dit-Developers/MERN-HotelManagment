@@ -1158,9 +1158,11 @@ function ReceptionDashboard() {
                   <input
                     type="text"
                     value={guestForm.fullName}
-                    onChange={(e) =>
-                      setGuestForm({ ...guestForm, fullName: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const sanitized = raw.replace(/[^a-zA-Z\s.'-]/g, '');
+                      setGuestForm({ ...guestForm, fullName: sanitized });
+                    }}
                     className={inputClasses}
                     required
                     style={{ borderColor: customStyles.navy[200] }}
@@ -1186,9 +1188,11 @@ function ReceptionDashboard() {
                   <input
                     type="tel"
                     value={guestForm.phone}
-                    onChange={(e) =>
-                      setGuestForm({ ...guestForm, phone: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const sanitized = raw.replace(/[^0-9+\-\s()]/g, '');
+                      setGuestForm({ ...guestForm, phone: sanitized });
+                    }}
                     className={inputClasses}
                     required
                     style={{ borderColor: customStyles.navy[200] }}

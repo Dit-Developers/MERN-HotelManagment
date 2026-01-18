@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { 
   FaUsers, 
@@ -77,6 +77,7 @@ function GuestDashboard() {
   const [feedbackForm, setFeedbackForm] = useState({
     remarks: "",
   });
+  const [myReviews, setMyReviews] = useState([]);
 
   // Custom color styles matching HomePage
   const customStyles = {
@@ -182,6 +183,30 @@ function GuestDashboard() {
     return true;
   };
 
+  const fetchMyReviews = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userData = JSON.parse(localStorage.getItem("user"));
+      if (!token || !userData?._id) {
+        return;
+      }
+      const res = await axios.get(
+        `${API_URL}/reviews/get-user/reviews/${userData._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const reviewsArray = Array.isArray(res.data?.getReviews)
+        ? res.data.getReviews
+        : Array.isArray(res.data)
+        ? res.data
+        : [];
+      setMyReviews(reviewsArray);
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("user"));
     setUser(userData);
@@ -199,8 +224,9 @@ function GuestDashboard() {
       fetchRooms();
       fetchMyBookings();
       fetchMyServiceRequests();
+      fetchMyReviews();
     }
-  }, []);
+  }, [fetchMyReviews]);
 
   // Fetch available rooms
   const fetchRooms = async () => {
@@ -432,6 +458,7 @@ function GuestDashboard() {
 
       setMessage("Thank you for your feedback!");
       setFeedbackForm({ remarks: "" });
+      await fetchMyReviews();
     } catch (error) {
       setMessage(error.response?.data?.message || "Feedback submission failed");
     }
@@ -1233,7 +1260,7 @@ function GuestDashboard() {
                       onChange={(e) =>
                         setServiceForm({
                           ...serviceForm,
-                          roomNumber: e.target.value,
+                          roomNumber: e.target.value.replace(/[^0-9]/g, ''),
                         })
                       }
                       className={inputClasses}
@@ -1307,54 +1334,110 @@ function GuestDashboard() {
 
           {/* Give Feedback Tab */}
           {activeTab === "giveFeedback" && (
-            <div className="max-w-2xl mx-auto">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-light text-gray-900 mb-3 tracking-tight">
-                  Share Your <span style={{ color: customStyles.navy[900] }}>Experience</span>
-                </h3>
-                <p className="text-gray-600 font-light">
-                  Feedback from: <strong>{user.fullName}</strong>
-                </p>
-              </div>
-              
-              <form onSubmit={handleFeedbackSubmit} className="space-y-6">
-                <div className={cardClasses}>
-                  <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">
-                    Your Feedback
-                  </label>
-                  <textarea
-                    value={feedbackForm.remarks}
-                    onChange={(e) =>
-                      setFeedbackForm({
-                        ...feedbackForm,
-                        remarks: e.target.value,
-                      })
-                    }
-                    className={textareaClasses}
-                    rows="6"
-                    placeholder="Share your experience with us..."
-                    required
-                    style={{ borderColor: customStyles.navy[200] }}
-                  />
+            <div className="max-w-4xl mx-auto space-y-8">
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-light text-gray-900 mb-3 tracking-tight">
+                    Share Your <span style={{ color: customStyles.navy[900] }}>Experience</span>
+                  </h3>
+                  <p className="text-gray-600 font-light">
+                    Feedback from: <strong>{user.fullName}</strong>
+                  </p>
                 </div>
+                
+                <form onSubmit={handleFeedbackSubmit} className="space-y-6">
+                  <div className={cardClasses}>
+                    <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">
+                      Your Feedback
+                    </label>
+                    <textarea
+                      value={feedbackForm.remarks}
+                      onChange={(e) =>
+                        setFeedbackForm({
+                          ...feedbackForm,
+                          remarks: e.target.value,
+                        })
+                      }
+                      className={textareaClasses}
+                      rows="6"
+                      placeholder="Share your experience with us..."
+                      required
+                      style={{ borderColor: customStyles.navy[200] }}
+                    />
+                  </div>
 
-                <button
-                  type="submit"
-                  className={submitButtonClasses}
-                  style={{ backgroundColor: customStyles.gold[600] }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[700]}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[600]}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <FaClock className="animate-spin" /> Submitting...
-                    </span>
-                  ) : (
-                    "Submit Feedback"
-                  )}
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    className={submitButtonClasses}
+                    style={{ backgroundColor: customStyles.gold[600] }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[700]}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = customStyles.gold[600]}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <FaClock className="animate-spin" /> Submitting...
+                      </span>
+                    ) : (
+                      "Submit Feedback"
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              <div className={cardClasses}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-light text-gray-900">
+                    Your Previous Feedback
+                  </h4>
+                </div>
+                {(!Array.isArray(myReviews) || myReviews.length === 0) ? (
+                  <p className="text-gray-600 text-sm font-light">
+                    You have not submitted any feedback yet.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {myReviews.map((review) => (
+                      <div
+                        key={review._id}
+                        className="flex items-start justify-between border rounded-sm px-4 py-3 bg-white/80"
+                        style={{ borderColor: customStyles.navy[200] }}
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-800 font-light mb-2">
+                            {review.remarks}
+                          </p>
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                            <span>
+                              {review.createdAt
+                                ? new Date(review.createdAt).toLocaleDateString()
+                                : ""}
+                            </span>
+                            <span>•</span>
+                            <span
+                              className="inline-flex items-center px-2 py-1 rounded-sm"
+                              style={{
+                                backgroundColor:
+                                  review.status === "approved"
+                                    ? `${customStyles.gold[600]}20`
+                                    : `${customStyles.navy[200]}40`,
+                                color:
+                                  review.status === "approved"
+                                    ? customStyles.gold[700]
+                                    : customStyles.navy[700],
+                              }}
+                            >
+                              {review.status === "approved"
+                                ? "Confirmed by Admin"
+                                : "Waiting for Admin Confirmation"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -1440,7 +1523,7 @@ function GuestDashboard() {
                         onChange={(e) =>
                           setProfileForm({
                             ...profileForm,
-                            fullName: e.target.value,
+                            fullName: e.target.value.replace(/[^a-zA-Z\s.'-]/g, ''),
                           })
                         }
                         className={inputClasses}
@@ -1477,12 +1560,14 @@ function GuestDashboard() {
                       <input
                         type="text"
                         value={profileForm.phone}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const sanitized = raw.replace(/[^0-9+\-\s()]/g, '');
                           setProfileForm({
                             ...profileForm,
-                            phone: e.target.value,
-                          })
-                        }
+                            phone: sanitized,
+                          });
+                        }}
                         className={inputClasses}
                         style={{ borderColor: customStyles.navy[200] }}
                       />

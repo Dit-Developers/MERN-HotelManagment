@@ -83,7 +83,6 @@ function AdminDashboard() {
     status: 'pending'
   });
   const [newReview, setNewReview] = useState({
-    userId: '',
     remarks: ''
   });
   const [newServiceRequest, setNewServiceRequest] = useState({
@@ -301,12 +300,6 @@ function AdminDashboard() {
   };
 
   const validateReviewData = (data) => {
-    if (!data.userId) {
-      setError('User is required for a review');
-      setSuccess('');
-      return false;
-    }
-
     if (!data.remarks || !data.remarks.trim()) {
       setError('Review remarks cannot be empty');
       setSuccess('');
@@ -990,13 +983,26 @@ function AdminDashboard() {
   };
 
   // CRUD for Reviews
+  const updateReviewStatus = async (id, status) => {
+    await apiCall('PUT', `/reviews/update-review-status/${id}`, { status });
+  };
+
   const createReview = async (e) => {
     e.preventDefault();
     if (!validateReviewData(newReview)) {
       return;
     }
-    await apiCall('POST', '/reviews/create-review', newReview);
-    setNewReview({ userId: '', remarks: '' });
+    const payload = {
+      userId: user?._id,
+      remarks: newReview.remarks
+    };
+    if (!payload.userId) {
+      setError('Admin user information is missing');
+      setSuccess('');
+      return;
+    }
+    await apiCall('POST', '/reviews/create-review', payload);
+    setNewReview({ remarks: '' });
   };
 
   const deleteReview = (id) => {
@@ -1464,7 +1470,11 @@ function AdminDashboard() {
                       className={inputClasses}
                       placeholder="Full Name"
                       value={editingUser.fullName}
-                      onChange={e => setEditingUser({ ...editingUser, fullName: e.target.value })}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^a-zA-Z\s.'-]/g, '');
+                        setEditingUser({ ...editingUser, fullName: sanitized });
+                      }}
                       required
                     />
                   </div>
@@ -1495,7 +1505,11 @@ function AdminDashboard() {
                       className={inputClasses}
                       placeholder="Phone"
                       value={editingUser.phone}
-                      onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^0-9+\-\s()]/g, '');
+                        setEditingUser({ ...editingUser, phone: sanitized });
+                      }}
                     />
                   </div>
                   <div>
@@ -1569,7 +1583,11 @@ function AdminDashboard() {
                       className={inputClasses}
                       placeholder="Full Name"
                       value={newUser.fullName}
-                      onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^a-zA-Z\s.'-]/g, '');
+                        setNewUser({ ...newUser, fullName: sanitized });
+                      }}
                       required
                     />
                   </div>
@@ -1611,7 +1629,11 @@ function AdminDashboard() {
                       className={inputClasses}
                       placeholder="Phone"
                       value={newUser.phone}
-                      onChange={e => setNewUser({ ...newUser, phone: e.target.value })}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^0-9+\-\s()]/g, '');
+                        setNewUser({ ...newUser, phone: sanitized });
+                      }}
                     />
                   </div>
                   <div>
@@ -1825,7 +1847,11 @@ function AdminDashboard() {
                       className={inputClasses}
                       placeholder="Room Number"
                       value={editingRoom.roomNumber}
-                      onChange={e => setEditingRoom({ ...editingRoom, roomNumber: e.target.value })}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^0-9]/g, '');
+                        setEditingRoom({ ...editingRoom, roomNumber: sanitized });
+                      }}
                       required
                     />
                   </div>
@@ -1849,6 +1875,9 @@ function AdminDashboard() {
                     <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Price per Night</label>
                     <input
                       className={inputClasses}
+                      type="number"
+                      min="0"
+                      step="0.01"
                       placeholder="Price per Night"
                       value={editingRoom.pricePerNight}
                       onChange={e =>
@@ -1915,7 +1944,11 @@ function AdminDashboard() {
                       className={inputClasses}
                       placeholder="Room Number"
                       value={newRoom.roomNumber}
-                      onChange={e => setNewRoom({ ...newRoom, roomNumber: e.target.value })}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^0-9]/g, '');
+                        setNewRoom({ ...newRoom, roomNumber: sanitized });
+                      }}
                       required
                     />
                   </div>
@@ -1939,6 +1972,9 @@ function AdminDashboard() {
                     <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Price per Night</label>
                     <input
                       className={inputClasses}
+                      type="number"
+                      min="0"
+                      step="0.01"
                       placeholder="Price per Night"
                       value={newRoom.pricePerNight}
                       onChange={e => setNewRoom({ ...newRoom, pricePerNight: e.target.value })}
@@ -2545,16 +2581,6 @@ function AdminDashboard() {
               </div>
               <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">User ID</label>
-                  <input
-                    className={inputClasses}
-                    placeholder="User ID"
-                    value={newReview.userId}
-                    onChange={e => setNewReview({ ...newReview, userId: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
                   <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Remarks</label>
                   <textarea
                     className={textareaClasses}
@@ -2625,9 +2651,46 @@ function AdminDashboard() {
                               {new Date(r.createdAt).toLocaleDateString()}
                             </span>
                           </div>
+                          <div className="mt-2 flex items-center gap-3">
+                            <span
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-sm"
+                              style={{
+                                backgroundColor:
+                                  r.status === 'approved'
+                                    ? `${customStyles.gold[600]}20`
+                                    : `${customStyles.navy[200]}40`,
+                                color:
+                                  r.status === 'approved'
+                                    ? customStyles.gold[700]
+                                    : customStyles.navy[700]
+                              }}
+                            >
+                              {r.status === 'approved' ? 'Approved by Admin' : 'Pending Approval'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        {r.status !== 'approved' && (
+                          <button
+                            className="group/btn flex items-center gap-2 px-3 py-2 text-sm font-light tracking-wider uppercase rounded-sm transition-all duration-300 mr-2"
+                            style={{ 
+                              borderColor: customStyles.gold[600],
+                              color: customStyles.gold[700]
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = customStyles.gold[600];
+                              e.currentTarget.style.color = 'white';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.color = customStyles.gold[700];
+                            }}
+                            onClick={() => updateReviewStatus(r._id, 'approved')}
+                          >
+                            <FaCheckCircle /> Confirm
+                          </button>
+                        )}
                         <button
                           className="group/btn flex items-center gap-2 px-3 py-2 text-sm font-light tracking-wider uppercase rounded-sm transition-all duration-300"
                           style={{ 

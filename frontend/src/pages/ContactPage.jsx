@@ -140,13 +140,23 @@ function ContactPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    let nextValue = value;
+
+    if (name === 'name') {
+      nextValue = value.replace(/[^a-zA-Z\s.'-]/g, '');
+    }
+
+    if (name === 'phone') {
+      nextValue = value.replace(/[^0-9+\-\s()]/g, '');
+    }
+
     setFormData({
       ...formData,
-      [name]: value
+      [name]: nextValue
     });
 
     if (touched[name]) {
-      const errorMessage = validateField(name, value);
+      const errorMessage = validateField(name, nextValue);
       setFieldErrors(prev => ({
         ...prev,
         [name]: errorMessage

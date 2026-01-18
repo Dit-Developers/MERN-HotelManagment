@@ -7,6 +7,7 @@ const authorizeRole = require('../Middlewares/authorizeMiddleware');
 router.get("/get-all-reviews", authenticateJWT, authorizeRole('admin', 'manager'), reviewController.getAllReviews);
 router.post("/create-review", authenticateJWT, authorizeRole('guest', 'user', 'staff', 'receptionist', 'manager', 'admin'), reviewController.createReview);
 router.get("/get-user/reviews/:userId", authenticateJWT, authorizeRole('admin', 'manager', 'guest', 'user'), reviewController.getUserReviews);
+router.put("/update-review-status/:reviewId", authenticateJWT, authorizeRole('admin', 'manager'), reviewController.updateReviewStatus);
 router.delete("/delete-review/:reviewId", authenticateJWT, authorizeRole('admin'), reviewController.deleteReview);
 
 
