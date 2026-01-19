@@ -1,4 +1,5 @@
 const roomModel = require('../Models/RoomModel');
+const Notification = require('../Models/NotificationModel');
 const availableStatus = "available";
 const bookedStatus = "booked";
 const underMaintenenceStatus = "under maintenance";
@@ -130,6 +131,55 @@ const updateRoomStatus = async (req, res) => {
 
         if (!updateStatus) {
             return res.status(404).json({ message: "An error occurred while updating room status" });
+        }
+
+        // Send notifications based on status change
+        try {
+            if (newStatus === 'cleaning') {
+                // Notify Staff
+                await Notification.create({
+                    type: 'system',
+                    recipientRole: 'staff',
+                    message: `Room ${findRoom.roomNumber} needs cleaning.`,
+                    referenceId: roomId
+                });
+            } else if (newStatus === 'available') {
+                // Notify Reception & Manager
+                const readyMessage = `Room ${findRoom.roomNumber} is now available for check-in.`;
+                
+                await Notification.create({
+                    type: 'system',
+                    recipientRole: 'receptionist',
+                    message: readyMessage,
+                    referenceId: roomId
+                });
+
+                await Notification.create({
+                    type: 'system',
+                    recipientRole: 'manager',
+                    message: readyMessage,
+                    referenceId: roomId
+                });
+            } else if (newStatus === 'under maintenance') {
+                // Notify Admin & Manager
+                const maintMessage = `Room ${findRoom.roomNumber} has been marked as Under Maintenance.`;
+                
+                await Notification.create({
+                    type: 'maintenance',
+                    recipientRole: 'admin',
+                    message: maintMessage,
+                    referenceId: roomId
+                });
+
+                await Notification.create({
+                    type: 'maintenance',
+                    recipientRole: 'manager',
+                    message: maintMessage,
+                    referenceId: roomId
+                });
+            }
+        } catch (notifyError) {
+            console.error("Error creating notification:", notifyError);
         }
 
         return res.status(200).json({ message: `The room has been successfully ${newStatus}`, updateStatus });

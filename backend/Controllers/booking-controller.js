@@ -1,4 +1,5 @@
 const bookingModel = require('../Models/BookingModel');
+const Notification = require('../Models/NotificationModel');
 
 const createBooking = async (req, res) => {
     try {
@@ -17,6 +18,36 @@ const createBooking = async (req, res) => {
         });
 
         if (booking) {
+            // Create notification for admin
+            try {
+                await Notification.create({
+                    type: 'booking',
+                    recipientRole: 'admin',
+                    message: `New booking created for Room ID: ${roomId}`,
+                    referenceId: booking._id
+                });
+
+                // Create notification for manager
+                await Notification.create({
+                    type: 'booking',
+                    recipientRole: 'manager',
+                    message: `New booking created for Room ID: ${roomId}`,
+                    referenceId: booking._id
+                });
+
+                // Create notification for guest
+                await Notification.create({
+                    type: 'booking',
+                    recipientRole: 'guest',
+                    userId: effectiveGuestId,
+                    message: `Your booking request for Room ID: ${roomId} has been received.`,
+                    referenceId: booking._id
+                });
+            } catch (notifyError) {
+                console.error("Error creating notification:", notifyError);
+                // Don't fail the booking if notification fails
+            }
+
             return res.status(200).json({ message: "Booking has been created successfully", booking });
         }
 
@@ -69,6 +100,38 @@ const updateBookingStatus = async (req, res) => {
         const { bookingStatus } = req.body;
         const findAbookingAndUpdate = await bookingModel.findByIdAndUpdate(bookingId, { bookingStatus: bookingStatus }, {new: true});
         if (!findAbookingAndUpdate) { return res.status(404).json({ message: "An error while updating the status" }); }
+
+        // Notify Guest
+        try {
+            await Notification.create({
+                type: 'booking',
+                recipientRole: 'guest',
+                userId: findAbookingAndUpdate.guestId,
+                message: `Your booking status for Room ID: ${findBooking.roomId} has been updated to: ${bookingStatus}`,
+                referenceId: findAbookingAndUpdate._id
+            });
+
+            // Notify Admin & Manager if cancelled or checked-in/out
+            if (['cancelled', 'checked_in', 'checked_out'].includes(bookingStatus)) {
+                const alertMessage = `Booking #${bookingId} status updated to: ${bookingStatus}`;
+                
+                await Notification.create({
+                    type: 'booking',
+                    recipientRole: 'admin',
+                    message: alertMessage,
+                    referenceId: findAbookingAndUpdate._id
+                });
+
+                await Notification.create({
+                    type: 'booking',
+                    recipientRole: 'manager',
+                    message: alertMessage,
+                    referenceId: findAbookingAndUpdate._id
+                });
+            }
+        } catch (notifyError) {
+            console.error("Error creating notification:", notifyError);
+        }
 
         return res.status(200).json({ message: "Status has been updated", findAbookingAndUpdate });
     } catch (error) {

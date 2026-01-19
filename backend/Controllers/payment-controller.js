@@ -1,5 +1,6 @@
 const paymentModel = require("../Models/PaymentModel");
 const BookingModel = require("../Models/BookingModel");
+const Notification = require('../Models/NotificationModel');
 
 // POST A PAYMENT API
 const processPayment = async (req, res) => {
@@ -105,6 +106,28 @@ const processPayment = async (req, res) => {
       status: status || "pending"
     });
 
+    // Create notification for admin
+    try {
+      await Notification.create({
+        type: 'system',
+        message: `New payment of ${amount} ${normalizedCurrency || 'USD'} received for Booking ${bookingId}`,
+        referenceId: payment._id
+      });
+
+      // Create notification for guest
+      if (effectiveUserId) {
+        await Notification.create({
+          type: 'payment',
+          recipientRole: 'guest',
+          userId: effectiveUserId,
+          message: `Your payment of ${amount} ${normalizedCurrency || 'USD'} for Booking ${bookingId} was successful.`,
+          referenceId: payment._id
+        });
+      }
+    } catch (notifyError) {
+      console.error("Error creating notification:", notifyError);
+    }
+
     return res.status(201).json({
       message: "Payment processed successfully",
       payment
@@ -194,6 +217,41 @@ const updatePaymentStatus = async (req, res) => {
 
         if (!updatedPayment) { 
             return res.status(404).json({ message: "Payment not found" }); 
+        }
+
+        // Send notifications
+        try {
+            // Notify Guest
+            if (updatedPayment.userId) {
+                await Notification.create({
+                    type: 'payment',
+                    recipientRole: 'guest',
+                    userId: updatedPayment.userId._id || updatedPayment.userId, // Handle populated or unpopulated
+                    message: `Your payment status has been updated to: ${status}`,
+                    referenceId: updatedPayment._id
+                });
+            }
+
+            // Notify Admin & Manager if status is failed or cancelled (important alerts)
+            if (['failed', 'cancelled', 'refunded'].includes(status)) {
+                 const alertMessage = `Payment #${updatedPayment._id} has been marked as ${status}.`;
+                 
+                 await Notification.create({
+                    type: 'system',
+                    recipientRole: 'admin',
+                    message: alertMessage,
+                    referenceId: updatedPayment._id
+                });
+
+                await Notification.create({
+                    type: 'system',
+                    recipientRole: 'manager',
+                    message: alertMessage,
+                    referenceId: updatedPayment._id
+                });
+            }
+        } catch (notifyError) {
+            console.error("Error creating notification:", notifyError);
         }
 
         return res.status(200).json({

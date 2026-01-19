@@ -1,5 +1,6 @@
 const SettingsModel = require('../Models/SettingsModel');
 const ContactMessageModel = require('../Models/ContactMessageModel');
+const Notification = require('../Models/NotificationModel');
 
 const getSettings = async (req, res) => {
   try {
@@ -52,6 +53,17 @@ const submitContactMessage = async (req, res) => {
       subject,
       message
     });
+
+    // Create notification for admin
+    try {
+      await Notification.create({
+        type: 'system',
+        message: `New contact message from ${name}: ${subject || 'No Subject'}`,
+        referenceId: contactMessage._id
+      });
+    } catch (notifyError) {
+      console.error("Error creating notification:", notifyError);
+    }
 
     return res.status(201).json({
       message: "Your message has been received. Our team will contact you soon.",

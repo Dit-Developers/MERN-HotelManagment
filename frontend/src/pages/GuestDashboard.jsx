@@ -9,7 +9,6 @@ import {
   FaBed, 
   FaConciergeBell, 
   FaUtensils,
-  FaBell,
   FaCog,
   FaChevronRight,
   FaUserCircle,
@@ -36,6 +35,7 @@ import {
   FaUser
 } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import NotificationBell from '../component/NotificationBell';
 import { API_URL } from '../config/api';
 
 function GuestDashboard() {
@@ -378,8 +378,8 @@ function GuestDashboard() {
     // Simple validation
     if (
       !serviceForm.serviceType ||
-      !serviceForm.description ||
-      !serviceForm.roomNumber
+      !serviceForm.description?.trim() ||
+      !serviceForm.roomNumber?.trim()
     ) {
       setMessage("Please fill all required fields");
       return;
@@ -440,6 +440,10 @@ function GuestDashboard() {
   // Handle feedback submission
   const handleFeedbackSubmit = async (e) => {
     e.preventDefault();
+    if (!feedbackForm.remarks?.trim()) {
+      setMessage("Feedback cannot be empty");
+      return;
+    }
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
@@ -472,6 +476,12 @@ function GuestDashboard() {
       setMessage("Email is required.");
       return;
     }
+
+    if (!profileForm.fullName?.trim() || !profileForm.username?.trim()) {
+      setMessage("Full Name and Username cannot be empty or just spaces.");
+      return;
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailValue)) {
       setMessage("Please enter a valid email address.");
@@ -595,7 +605,7 @@ function GuestDashboard() {
     >
       {/* Header */}
       <div 
-        className="relative overflow-hidden border-b"
+        className="relative border-b"
         style={{ borderColor: customStyles.navy[200] }}
       >
         <div className="absolute inset-0">
@@ -626,8 +636,13 @@ function GuestDashboard() {
               </div>
             </div>
 
-            <button
-              onClick={handleBackToWebsite}
+            <div className="flex items-center gap-4">
+              <div className="bg-white/90 p-1 rounded-full shadow-sm backdrop-blur-sm">
+                <NotificationBell />
+              </div>
+              
+              <button
+                onClick={handleBackToWebsite}
               className="group px-6 py-3 text-white font-medium rounded-sm transition-all duration-300 transform hover:scale-105 text-sm tracking-wider uppercase relative overflow-hidden border"
               style={{
                 borderColor: customStyles.gold[600],
@@ -647,6 +662,7 @@ function GuestDashboard() {
                 Back to Website
               </span>
             </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1252,22 +1268,29 @@ function GuestDashboard() {
 
                   <div className={cardClasses}>
                     <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">
-                      Your Room Number
+                      Select Your Room
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={serviceForm.roomNumber}
                       onChange={(e) =>
                         setServiceForm({
                           ...serviceForm,
-                          roomNumber: e.target.value.replace(/[^0-9]/g, ''),
+                          roomNumber: e.target.value,
                         })
                       }
                       className={inputClasses}
-                      placeholder="Enter your room number"
                       required
                       style={{ borderColor: customStyles.navy[200] }}
-                    />
+                    >
+                      <option value="">Select a room</option>
+                      {myBookings
+                        .filter(booking => booking.room && (booking.bookingStatus === 'confirmed' || booking.bookingStatus === 'checked-in'))
+                        .map((booking) => (
+                          <option key={booking._id} value={booking.room.roomNumber}>
+                            Room {booking.room.roomNumber} ({booking.room.roomType})
+                          </option>
+                        ))}
+                    </select>
                   </div>
                 </div>
 

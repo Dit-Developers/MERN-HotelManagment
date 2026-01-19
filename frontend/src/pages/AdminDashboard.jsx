@@ -22,13 +22,13 @@ import {
   FaUserCheck,
   FaMoneyBillWave,
   FaCommentDots,
-  FaBell,
   FaChevronRight,
   FaUserCircle,
   FaArrowUp,
   FaArrowDown
 } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import NotificationBell from '../component/NotificationBell';
 import { API_URL } from '../config/api';
 
 function AdminDashboard() {
@@ -109,6 +109,7 @@ function AdminDashboard() {
     message: '',
     onConfirm: null
   });
+
   const [user] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
   const token = localStorage.getItem('token');
 
@@ -433,6 +434,8 @@ function AdminDashboard() {
         }));
       }
 
+
+
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to fetch dashboard data');
@@ -538,6 +541,8 @@ function AdminDashboard() {
       setLoading(false);
     }
   }, [token]);
+
+
 
   // Clear messages
   useEffect(() => {
@@ -1019,10 +1024,17 @@ function AdminDashboard() {
   // CRUD for Service Requests
   const createServiceRequest = async (e) => {
     e.preventDefault();
-    if (!validateServiceRequestData(newServiceRequest)) {
+    
+    // Use current admin's ID for the request
+    const requestData = {
+      ...newServiceRequest,
+      userId: user._id
+    };
+
+    if (!validateServiceRequestData(requestData)) {
       return;
     }
-    await apiCall('POST', '/service-requests/create', newServiceRequest);
+    await apiCall('POST', '/service-requests/create', requestData);
     setNewServiceRequest({ userId: '', roomNumber: '', serviceType: 'room_cleaning', description: '', priority: 'normal', status: 'pending' });
   };
 
@@ -1765,8 +1777,9 @@ function AdminDashboard() {
                           <FaEdit /> Edit
                         </button>
                         <select
-                          className={smallSelectClasses}
+                          className={`${smallSelectClasses} ${u._id === user._id ? 'opacity-50 cursor-not-allowed' : ''}`}
                           value={u.status}
+                          disabled={u._id === user._id}
                           onChange={e =>
                             apiCall('PUT', `/update-status/${u._id}`, {
                               status: e.target.value
@@ -1778,20 +1791,29 @@ function AdminDashboard() {
                           <option value="suspended">Suspended</option>
                         </select>
                         <button
-                          className="group/btn flex items-center gap-2 px-3 py-2 text-sm font-light tracking-wider uppercase rounded-sm transition-all duration-300"
+                          className={`group/btn flex items-center gap-2 px-3 py-2 text-sm font-light tracking-wider uppercase rounded-sm transition-all duration-300 ${u._id === user._id ? 'opacity-50 cursor-not-allowed' : ''}`}
                           style={{ 
                             borderColor: '#DC2626',
                             color: '#DC2626'
                           }}
+                          disabled={u._id === user._id}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#DC2626';
-                            e.currentTarget.style.color = 'white';
+                            if (u._id !== user._id) {
+                              e.currentTarget.style.backgroundColor = '#DC2626';
+                              e.currentTarget.style.color = 'white';
+                            }
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                            e.currentTarget.style.color = '#DC2626';
+                            if (u._id !== user._id) {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.color = '#DC2626';
+                            }
                           }}
-                          onClick={() => deleteUser(u._id)}
+                          onClick={() => {
+                            if (u._id !== user._id) {
+                              deleteUser(u._id);
+                            }
+                          }}
                         >
                           <FaTrash /> Delete
                         </button>
@@ -1872,6 +1894,27 @@ function AdminDashboard() {
                     </select>
                   </div>
                   <div>
+                    <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Bed Count</label>
+                    <input
+                      className={inputClasses}
+                      type="number"
+                      min="1"
+                      placeholder="Number of Beds"
+                      value={editingRoom.bedCount || ''}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^0-9]/g, '');
+                        setEditingRoom({ ...editingRoom, bedCount: sanitized });
+                      }}
+                      onKeyDown={e => {
+                        if (['e', 'E', '+', '-'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      required
+                    />
+                  </div>
+                  <div>
                     <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Price per Night</label>
                     <input
                       className={inputClasses}
@@ -1880,9 +1923,16 @@ function AdminDashboard() {
                       step="0.01"
                       placeholder="Price per Night"
                       value={editingRoom.pricePerNight}
-                      onChange={e =>
-                        setEditingRoom({ ...editingRoom, pricePerNight: e.target.value })
-                      }
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^0-9.]/g, '');
+                        setEditingRoom({ ...editingRoom, pricePerNight: sanitized });
+                      }}
+                      onKeyDown={e => {
+                        if (['e', 'E', '+', '-'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
                       required
                     />
                   </div>
@@ -1969,6 +2019,27 @@ function AdminDashboard() {
                     </select>
                   </div>
                   <div>
+                    <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Bed Count</label>
+                    <input
+                      className={inputClasses}
+                      type="number"
+                      min="1"
+                      placeholder="Number of Beds"
+                      value={newRoom.bedCount}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^0-9]/g, '');
+                        setNewRoom({ ...newRoom, bedCount: sanitized });
+                      }}
+                      onKeyDown={e => {
+                        if (['e', 'E', '+', '-'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      required
+                    />
+                  </div>
+                  <div>
                     <label className="block text-sm font-light text-gray-700 mb-3 tracking-wider uppercase">Price per Night</label>
                     <input
                       className={inputClasses}
@@ -1977,7 +2048,16 @@ function AdminDashboard() {
                       step="0.01"
                       placeholder="Price per Night"
                       value={newRoom.pricePerNight}
-                      onChange={e => setNewRoom({ ...newRoom, pricePerNight: e.target.value })}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const sanitized = raw.replace(/[^0-9.]/g, '');
+                        setNewRoom({ ...newRoom, pricePerNight: sanitized });
+                      }}
+                      onKeyDown={e => {
+                        if (['e', 'E', '+', '-'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
                       required
                     />
                   </div>
@@ -2422,7 +2502,16 @@ function AdminDashboard() {
                     type="number"
                     placeholder="Amount"
                     value={newPayment.amount}
-                    onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })}
+                    onChange={e => {
+                      const raw = e.target.value;
+                      const sanitized = raw.replace(/[^0-9.]/g, '');
+                      setNewPayment({ ...newPayment, amount: sanitized });
+                    }}
+                    onKeyDown={e => {
+                      if (['e', 'E', '+', '-'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                     required
                   />
                 </div>
@@ -2964,12 +3053,19 @@ function AdminDashboard() {
                     max="50"
                     step="0.1"
                     value={settingsForm.defaultTaxRate}
-                    onChange={e =>
+                    onChange={e => {
+                      const raw = e.target.value;
+                      const sanitized = raw.replace(/[^0-9.]/g, '');
                       setSettingsForm({
                         ...settingsForm,
-                        defaultTaxRate: parseFloat(e.target.value) || 0
+                        defaultTaxRate: sanitized
                       })
-                    }
+                    }}
+                    onKeyDown={e => {
+                      if (['e', 'E', '+', '-'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                   />
                 </div>
                 <div>
@@ -2981,12 +3077,19 @@ function AdminDashboard() {
                     max="100"
                     step="0.1"
                     value={settingsForm.defaultDiscountRate}
-                    onChange={e =>
+                    onChange={e => {
+                      const raw = e.target.value;
+                      const sanitized = raw.replace(/[^0-9.]/g, '');
                       setSettingsForm({
                         ...settingsForm,
-                        defaultDiscountRate: parseFloat(e.target.value) || 0
+                        defaultDiscountRate: sanitized
                       })
-                    }
+                    }}
+                    onKeyDown={e => {
+                      if (['e', 'E', '+', '-'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -3117,7 +3220,7 @@ function AdminDashboard() {
     >
       {/* Header */}
       <div 
-        className="relative overflow-hidden border-b"
+        className="relative border-b"
         style={{ borderColor: customStyles.navy[200] }}
       >
         <div className="absolute inset-0">
@@ -3139,6 +3242,11 @@ function AdminDashboard() {
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <div className="bg-white/90 p-1 rounded-full shadow-sm backdrop-blur-sm">
+                <NotificationBell />
+              </div>
+
               <div className="flex items-center gap-3">
                 <div 
                   className="p-2 rounded-full"

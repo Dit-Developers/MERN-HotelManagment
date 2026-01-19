@@ -1,6 +1,7 @@
 const ServiceRequest = require('../Models/ServiceRequestModel');
+const Notification = require('../Models/NotificationModel');
 
-// CREATE SERVICE REQUEST (Guest can create)
+// CREATE NEW SERVICE REQUEST (Guest can create)
 const createServiceRequest = async (req, res) => {
   try {
     const { serviceType, description, roomNumber, priority } = req.body;
@@ -21,6 +22,25 @@ const createServiceRequest = async (req, res) => {
       priority: priority || 'normal',
       status: 'pending'
     });
+
+    // Create notifications for Admin, Manager, and Staff
+    try {
+      const notifType = serviceType === 'maintenance' ? 'maintenance' : 'service';
+      const message = `New ${serviceType} request for Room ${roomNumber}: ${description.substring(0, 50)}...`;
+      
+      const rolesToNotify = ['admin', 'manager', 'staff'];
+      
+      const notifications = rolesToNotify.map(role => ({
+        type: notifType,
+        recipientRole: role,
+        message: message,
+        referenceId: serviceRequest._id
+      }));
+      
+      await Notification.insertMany(notifications);
+    } catch (notifyError) {
+      console.error("Error creating notification:", notifyError);
+    }
 
     return res.status(201).json({
       message: "Service request created successfully",
@@ -128,9 +148,24 @@ const updateServiceRequestStatus = async (req, res) => {
 
     await serviceRequest.save();
 
-    return res.status(200).json({
-      message: `Service request ${status} successfully`,
-      serviceRequest
+    // Notify Guest if status changed
+    try {
+      if (serviceRequest.userId) {
+        await Notification.create({
+          type: 'service',
+          recipientRole: 'guest',
+          userId: serviceRequest.userId,
+          message: `Your ${serviceRequest.serviceType} request for Room ${serviceRequest.roomNumber} is now: ${status}`,
+          referenceId: serviceRequest._id
+        });
+      }
+    } catch (notifyError) {
+      console.error("Error creating notification:", notifyError);
+    }
+
+    return res.status(200).json({ 
+      message: "Service request status updated", 
+      serviceRequest 
     });
 
   } catch (error) {
@@ -193,6 +228,21 @@ const assignServiceRequest = async (req, res) => {
     if (notes) serviceRequest.notes = notes;
 
     await serviceRequest.save();
+
+    // Notification Logic: Notify the assigned staff member
+    try {
+        if (assignedTo) {
+             await Notification.create({
+                type: 'service',
+                recipientRole: 'staff', // Target role is staff, but we also specify userId for precision
+                userId: assignedTo,
+                message: `New Work Assignment: You have been assigned a service request for Room ${serviceRequest.roomNumber}.`,
+                referenceId: serviceRequest._id
+            });
+        }
+    } catch (notifyError) {
+        console.error("Error creating assignment notification:", notifyError);
+    }
 
     return res.status(200).json({
       message: "Service request assigned successfully",

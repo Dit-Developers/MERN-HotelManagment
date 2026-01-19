@@ -23,6 +23,7 @@ import {
   FaChevronDown
 } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import NotificationBell from '../component/NotificationBell';
 import { API_URL } from '../config/api';
 
 function ManagerDashboard() {
@@ -1577,7 +1578,7 @@ function ManagerDashboard() {
     >
       {/* Header */}
       <div 
-        className="relative overflow-hidden border-b"
+        className="relative border-b"
         style={{ borderColor: customStyles.navy[200] }}
       >
         <div className="absolute inset-0">
@@ -1599,6 +1600,9 @@ function ManagerDashboard() {
             </div>
             
             <div className="flex items-center gap-4">
+              <div className="bg-white/90 p-1 rounded-full shadow-sm backdrop-blur-sm">
+                <NotificationBell />
+              </div>
               <div className="flex items-center gap-3">
                 <div 
                   className="p-2 rounded-full"

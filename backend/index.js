@@ -36,6 +36,7 @@ const paymentRouter = require("./Routes/payment-router");
 const reviewRouter = require('./Routes/review-router');
 const serviceRequestRouter = require('./Routes/serviceRequestRoutes');
 const settingsRouter = require('./Routes/settings-router');
+const notificationRouter = require('./Routes/notification-router');
 
 app.use("/api", authRouter);
 app.use("/api/room", roomRouter);
@@ -44,6 +45,7 @@ app.use("/api/payment", paymentRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/service-requests", serviceRequestRouter);
 app.use("/api", settingsRouter);
+app.use("/api/notifications", notificationRouter);
 
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);

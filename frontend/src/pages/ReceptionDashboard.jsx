@@ -27,6 +27,7 @@ import {
   FaIdCard
 } from 'react-icons/fa';
 import FormStatus from '../component/FormStatus';
+import NotificationBell from '../component/NotificationBell';
 import { API_URL } from '../config/api';
 
 function ReceptionDashboard() {
@@ -319,12 +320,9 @@ function ReceptionDashboard() {
   const fetchGuests = async () => {
     try {
       if (!token) {
-        console.log("No token found");
         return;
       }
 
-      console.log("Fetching guests from:", `${API_URL}/get-all-users`);
-      
       const response = await fetch(`${API_URL}/get-all-users`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -332,13 +330,7 @@ function ReceptionDashboard() {
         }
       });
       
-      console.log("Response status:", response.status);
-      
       const data = await response.json();
-      console.log("Raw API response for guests:", data);
-      
-      // Debug: Log the structure of the response
-      console.log("Response keys:", Object.keys(data));
       
       // Try different possible data structures
       let allUsers = [];
@@ -346,28 +338,21 @@ function ReceptionDashboard() {
       if (Array.isArray(data)) {
         // Case 1: API returns array directly
         allUsers = data;
-        console.log("Data is direct array");
       } else if (Array.isArray(data?.allUsers)) {
         // Case 2: API returns {allUsers: [...]}
         allUsers = data.allUsers;
-        console.log("Data found in allUsers property");
       } else if (Array.isArray(data?.users)) {
         // Case 3: API returns {users: [...]}
         allUsers = data.users;
-        console.log("Data found in users property");
       } else if (data?.allUsers && typeof data.allUsers === 'object') {
         // Case 4: API returns {allUsers: {data: [...]}}
         if (Array.isArray(data.allUsers.data)) {
           allUsers = data.allUsers.data;
-          console.log("Data found in allUsers.data property");
         }
       } else if (data?.data && Array.isArray(data.data)) {
         // Case 5: API returns {data: [...]}
         allUsers = data.data;
-        console.log("Data found in data property");
       }
-      
-      console.log("Parsed allUsers:", allUsers);
       
       // Filter guests only - more flexible filtering
       const guestsOnly = allUsers.filter(user => {
@@ -375,14 +360,9 @@ function ReceptionDashboard() {
         return userRole === 'guest' || !userRole || userRole === 'user';
       });
       
-      console.log("Filtered guests:", guestsOnly);
-      console.log("Total users found:", allUsers.length);
-      console.log("Guests found:", guestsOnly.length);
-      
       setGuests(guestsOnly);
     } catch (error) {
       console.log('Error fetching guests:', error.message);
-      console.log('Error stack:', error.stack);
     }
   };
   
@@ -407,9 +387,6 @@ function ReceptionDashboard() {
       } else if (Array.isArray(data?.rooms)) {
         roomsData = data.rooms;
       }
-      
-      console.log("Rooms data received:", data);
-      console.log("Rooms parsed:", roomsData);
       
       setRooms(roomsData);
       
@@ -447,7 +424,6 @@ function ReceptionDashboard() {
         bookingsData = data.bookings;
       }
       
-      console.log("Bookings fetched:", bookingsData);
       setBookings(bookingsData);
     } catch (error) {
       console.log('Error fetching bookings:', error);
@@ -920,7 +896,7 @@ function ReceptionDashboard() {
     >
       {/* Header */}
       <div 
-        className="relative overflow-hidden border-b"
+        className="relative border-b"
         style={{ borderColor: customStyles.navy[200] }}
       >
         <div className="absolute inset-0">
@@ -942,6 +918,11 @@ function ReceptionDashboard() {
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <div className="bg-white/90 p-1 rounded-full shadow-sm backdrop-blur-sm">
+                <NotificationBell />
+              </div>
+
               <div className="flex items-center gap-3">
                 <div 
                   className="p-2 rounded-full"
